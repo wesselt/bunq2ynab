@@ -3,12 +3,19 @@ from OpenSSL import crypto
 import json
 import os
 import requests
+import socket
 import sys
 
 
 url = "https://api.bunq.com/"
+target_host = "api.bunq.com"
+target_port = 443  # https port
+
+api_token_file = "api_token.txt"
 private_key_file = "private_key.txt"
-public_key_file = "public_key.txt"
+installation_token_file = "installation_token.txt"
+server_public_file = "server_public.txt"
+session_token_file = "session_token.txt"
 
 
 def read_file(fname):
@@ -20,55 +27,109 @@ def read_file(fname):
 
 
 def write_file(fname, data):
-    with open(fname, 'w') as f:
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    with open(fname, 'wb') as f:
         f.write(data)
 
 
 def delete_file(fname):
-    os.unlink(fname)
+    if os.path.isfile(fname):
+        os.unlink(fname)
 
 
 # -----------------------------------------------------------------------------
 
 def get_api_token():
-    token = read_file("api_token.txt")
+    token = read_file(api_token_file)
     if token:
         return token.rstrip("\n")
-    raise Exception("File api_token.txt not found.  Add an API key " +
-                    "using the app and store it in api_token.txt.")
-
-
-def get_installation_token():
-    token = read_token("installation_token.txt")
-    if token:
-        return token.rstrip("\n")
-    raise Exception("Not implemented yet")
-
-
-def get_session_token():
-    token = read_token("session_token.txt")
-    if token:
-        return token.rstrip("\n")
-    raise Exception("Not implemented yet")
+    raise Exception("BUNQ API key not found.  Add an API key " +
+                    "using the app and store it in " + api_token_file)
 
 
 def get_private_key():
-    pem = read_file(private_key_file)
-    if pem:
-        return crypto.load_privatekey(crypto.FILETYPE_PEM, pem, password)
+    pem_str = read_file(private_key_file)
+    if pem_str:
+        return crypto.load_privatekey(crypto.FILETYPE_PEM, pem_str)
     print ("Generating new private key...")
     key = crypto.PKey()
+    key.generate_key(crypto.TYPE_RSA, 2048)
     pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    delete_file(public_key_file)
     write_file(private_key_file, pem)
     return key
 
 
 def get_public_key():
-    pem = read_file(public_key_file)
-    if pem:
-        return crypto.load_publickey(crypto.FILETYPE_PEM, pem)
-    raise Exception("Not implemented yet")
+    private_key = get_private_key()
+    pem = crypto.dump_publickey(crypto.FILETYPE_PEM, private_key)
+    return crypto.load_publickey(crypto.FILETYPE_PEM, pem)
+
+
+def get_installation_token():
+    token = read_file(installation_token_file)
+    if token:
+        return token.rstrip("\n")
+    print ("Requesting installation token...")
+    public_key = get_public_key()
+    pem = crypto.dump_publickey(crypto.FILETYPE_PEM, public_key)
+    method = "v1/installation"
+    data = {
+        "client_public_key": pem.decode("utf-8")
+    }
+    reply = post(method, data, add_signature=False)
+    installation_token = server_public = None
+    for row in reply:
+        if "Token" in row:
+            installation_token = row["Token"]["token"]
+        elif "ServerPublicKey" in row:
+            server_public = row["ServerPublicKey"]["server_public_key"]
+    if not installation_token:
+        raise Exception("No token returned by installation")
+    if not server_public:
+        raise Exception("No server public key returned by installation")
+    write_file(installation_token_file, installation_token)
+    write_file(server_public_file, server_public)
+    register_device()
+    return installation_token
+
+
+def get_local_ip():
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.connect((target_host, target_port))
+        return s.getsockname()[0]
+
+
+def register_device():
+    ip = get_local_ip()
+    print ("Registering IP " + ip)
+    method = "v1/device-server"
+    data = {
+        "description": "bunq2ynab on " + socket.getfqdn(),
+        "secret": get_api_token(),
+        "permitted_ips": [ip]
+    }
+    post(method, data)
+
+
+def get_session_token():
+    token = read_file(session_token_file)
+    if token:
+        return token.rstrip("\n")
+    print ("Requesting session token...")
+    method = "v1/session-server"
+    data = {
+        "secret": get_api_token()
+    }
+    reply = post(method, data)
+    session_token = None
+    for row in reply:
+        if "Token" in row:
+            session_token = row["Token"]["token"]
+    if not session_token:
+        raise Exception("No token returned by session-server")
+    write_file(session_token_file, session_token)
+    return session_token
 
 
 # -----------------------------------------------------------------------------
@@ -118,10 +179,11 @@ def get_content(method):
     return reply.text
 
 
-def post(method, data_obj):
+def post(method, data_obj, add_signature=True):
     data = json.dumps(data_obj)
     headers = default_headers()
-    sign('POST', method, headers, data)
+    if add_signature:
+        sign('POST', method, headers, data)
     reply = requests.post(url + method, headers=headers, data=data)
     result = reply.json()
     if "Error" in result:

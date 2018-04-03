@@ -14,7 +14,7 @@ ynab_account_id = sys.argv[4]
 
 print ("Creating CSV export...")
 date_end = datetime.date.today()
-date_start = date_end - datetime.timedelta(days=1)
+date_start = date_end - datetime.timedelta(days=2)
 data = {
     "statement_format": "CSV",
     "date_start": date_start.strftime("%Y-%m-%d"),
@@ -46,20 +46,14 @@ for row in reader:
         "account_id": ynab_account_id,
         "date": row["Date"],
         "amount": milliunits,
-#        "payee_id": "",
-#        "payee_name": row["Description"],
-#        "category_id": "",
-#        "memo": "",
-#        "cleared": "cleared",
-#        "approved": False,
-#        "flag_color": "red",
-#        "import_id": "YNAB:{0}:{1}:1".format(milliunits, row["Date"])
+        "payee_name": row["Counterparty"],
+        "memo": row["Description"],
+        "import_id": "YNAB:{0}:{1}:1".format(milliunits, row["Date"])
     })
 
-
 print ("Uploading transactions to YNAB...")
-method = "v1/budgets/" + ynab_budget_id + "/transactions"
-result = ynab.post(method, {"transaction": transactions[0]})
+method = "v1/budgets/" + ynab_budget_id + "/transactions/bulk"
+result = ynab.post(method, {"transactions": transactions})
 stats = result["bulk"]
 print ("Uploaded {0} new and {1} duplicate transactions.".format(
        len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))

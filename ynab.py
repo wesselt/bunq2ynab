@@ -25,7 +25,8 @@ def get_personal_access_token():
 
 def default_headers():
     return {
-        'Authorization': 'Bearer ' + get_personal_access_token()
+        'Authorization': 'Bearer ' + get_personal_access_token(),
+        'Content-type': 'application/json'
     }
 
 
@@ -42,12 +43,9 @@ def get(method):
 def post(method, data_obj):
     data = json.dumps(data_obj)
     headers = default_headers()
-    print (json.dumps(data_obj, sort_keys=True, indent=2))
-    print (url + method)
     reply = requests.post(url + method, headers=headers, data=data)
     result = reply.json()
-    print (json.dumps(result, sort_keys=True, indent=2))
     if "error" in result:
         raise Exception("{0} (details: {1})".format(
                            result["error"]["name"], result["error"]["detail"]))
-    return result
+    return result["data"]
