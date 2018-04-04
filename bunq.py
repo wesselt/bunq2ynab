@@ -8,6 +8,8 @@ import sys
 
 
 url = "https://api.bunq.com/"
+
+# Endpoint to determine our public facing IP for device-server
 target_host = "api.bunq.com"
 target_port = 443  # https port
 
@@ -66,6 +68,15 @@ def get_public_key():
     return crypto.load_publickey(crypto.FILETYPE_PEM, pem)
 
 
+def get_server_public():
+    pem_str = read_file(server_public_file)
+    if pem_str:
+        return crypto.load_publickey(crypto.FILETYPE_PEM, pem_str)
+    raise Exception("Server public key not found.  This should have been " +
+        "stored in " + server_public_file + " while storing the " +
+        "installation token.")
+
+
 def get_installation_token():
     token = read_file(installation_token_file)
     if token:
@@ -77,7 +88,7 @@ def get_installation_token():
     data = {
         "client_public_key": pem.decode("utf-8")
     }
-    reply = post(method, data, add_signature=False)
+    reply = post(method, data)
     installation_token = server_public = None
     for row in reply:
         if "Token" in row:
@@ -135,7 +146,10 @@ def get_session_token():
 # -----------------------------------------------------------------------------
 
 def sign(action, method, headers, data = ''):
-    if "device-server" in method or "session-server" in method:
+    if method.startswith("v1/installation"):
+        return
+    if (method.startswith("v1/device-server") or 
+        method.startswith("v1/session-server")):
         headers['X-Bunq-Client-Authentication'] = get_installation_token()
     else:
         headers['X-Bunq-Client-Authentication'] = get_session_token()
@@ -147,6 +161,23 @@ def sign(action, method, headers, data = ''):
     sig = crypto.sign(private_key, ciphertext, 'sha256')
     sig_str = base64.b64encode(sig).decode("utf-8")
     headers['X-Bunq-Client-Signature'] = sig_str
+
+
+def verify(method, code, headers, data):
+    if method.startswith("v1/installation"):
+        return
+    ciphertext = str(code) + "\n"
+    for name in sorted(headers.keys()):
+        if name.startswith("X-Bunq-") and name != "X-Bunq-Server-Signature":
+            ciphertext += name + ": " + headers[name] + "\n"
+    ciphertext += "\n" + data
+    server_public = get_server_public()
+    x509 = crypto.X509()
+    x509.set_pubkey(server_public)
+    sig_str = headers["X-Bunq-Server-Signature"]
+    sig = base64.b64decode(sig_str)
+    # Will raise an exception when verification fails
+    crypto.verify(x509, sig, ciphertext, 'sha256')
 
 
 def default_headers():
@@ -166,6 +197,7 @@ def get(method):
     headers = default_headers()
     sign('GET', method, headers)
     reply = requests.get(url + method, headers=headers)
+    verify(method, reply.status_code, reply.headers, reply.text)
     result = reply.json()
     if "Error" in result:
         raise Exception(result["Error"][0]["error_description"])
@@ -176,15 +208,16 @@ def get_content(method):
     headers = default_headers()
     sign('GET', method, headers)
     reply = requests.get(url + method, headers=headers)
+    verify(method, reply.status_code, reply.headers, reply.text)
     return reply.text
 
 
-def post(method, data_obj, add_signature=True):
+def post(method, data_obj):
     data = json.dumps(data_obj)
     headers = default_headers()
-    if add_signature:
-        sign('POST', method, headers, data)
+    sign('POST', method, headers, data)
     reply = requests.post(url + method, headers=headers, data=data)
+    verify(method, reply.status_code, reply.headers, reply.text)
     result = reply.json()
     if "Error" in result:
         raise Exception(result["Error"][0]["error_description"])
@@ -195,6 +228,7 @@ def delete(method):
     headers = default_headers()
     sign('DELETE', method, headers)
     reply = requests.delete(url + method, headers=headers)
+    verify(method, reply.status_code, reply.headers, reply.text)
     result = reply.json()
     if "Error" in result:
         raise Exception(result["Error"][0]["error_description"])
