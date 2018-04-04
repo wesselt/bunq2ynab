@@ -48,6 +48,7 @@ for row in reader:
         "amount": milliunits,
         "payee_name": row["Counterparty"],
         "memo": row["Description"][:100],  # YNAB memo is max 100 chars
+        "cleared": "cleared",
         "import_id": "YNAB:{0}:{1}:1".format(milliunits, row["Date"])
     })
 
