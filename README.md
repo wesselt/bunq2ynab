@@ -8,9 +8,9 @@ A python script to upload bunq transactions to ynab.
 2. Create a BUNQ "API key" in the BUNQ mobile app.  Click your picture, then Security, API keys, then
 add a key using the plus on the top right.  Choose to "Reveal" the API key and share it.  Store the API key 
 in "api_token.txt".
-3. Verify that the link with BUNQ works by requesting the list of accounts:
+3. Verify that the link with BUNQ works by requesting the list of users and accounts:
 ```
-    python3 list_account.py
+    python3 list_user.py
 ```
 4. Create a YNAB "Personal Access Token" in the YNAB website https://app.youneedabudget.com/settings/developer.
 Store the token in "personal_access_token.txt".
@@ -18,7 +18,7 @@ Store the token in "personal_access_token.txt".
 ```
     python3 list_budget.py
 ```
-6. You're all set to upload transactions!  Pick a BUNQ userid and accountid from `list_account.py`, and a 
+6. You're all set to upload transactions!  Pick a BUNQ userid and accountid from `list_user.py`, and a 
 YNAB budgetid and accountid from `list_budget.py`, and run:
 ```
     python3 bunq2ynab.py <bunq userid> <bunq accountid> <ynab budgetid> <ynab accountid>
