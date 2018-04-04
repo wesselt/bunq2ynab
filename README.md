@@ -1,6 +1,6 @@
 # bunq2ynab
 
-A python script to upload bunq transactions to ynab.
+A python script to upload BUNQ transactions to YNAB
 
 ## Installation
 
