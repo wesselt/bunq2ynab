@@ -195,8 +195,11 @@ def verify(method, code, headers, data):
     crypto.verify(x509, sig, ciphertext, 'sha256')
 
 
-def default_headers():
-    return {
+def call_requests(action, method, data_obj):
+    data = ''
+    if data_obj:
+        data = json.dumps(data_obj)
+    headers = {
         'Cache-Control': 'no-cache',
         'User-Agent': 'bunq2ynab',
         'X-Bunq-Client-Request-Id': '0',
@@ -204,13 +207,6 @@ def default_headers():
         'X-Bunq-Language': 'en_US',
         'X-Bunq-Region': 'nl_NL'
     }
-
-
-def call_requests(action, method, data_obj):
-    data = ''
-    if data_obj:
-        data = json.dumps(data_obj)
-    headers = default_headers()
     sign(action, method, headers, data)
     if action == "GET":
         reply = requests.get(url + method, headers=headers)
