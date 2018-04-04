@@ -29,7 +29,7 @@ print ("Created CSV export {0}.".format(exportid))
 
 method = ("v1/user/{0}/monetary-account/{1}/customer-statement/{2}/content"
           .format(bunq_userid, bunq_accountid, exportid))
-export = bunq.get_content(method)
+export = bunq.get(method)
 
 method = "v1/user/{0}/monetary-account/{1}/customer-statement/{2}".format(
          bunq_userid, bunq_accountid, exportid)
@@ -47,7 +47,7 @@ for row in reader:
         "date": row["Date"],
         "amount": milliunits,
         "payee_name": row["Counterparty"],
-        "memo": row["Description"],
+        "memo": row["Description"][:100],  # YNAB memo is max 100 chars
         "import_id": "YNAB:{0}:{1}:1".format(milliunits, row["Date"])
     })
 

@@ -145,7 +145,8 @@ def get_session_token():
 
 # -----------------------------------------------------------------------------
 
-def sign(action, method, headers, data = ''):
+def sign(action, method, headers, data):
+    # Installation responses are not signed
     if method.startswith("v1/installation"):
         return
     if (method.startswith("v1/device-server") or 
@@ -164,8 +165,15 @@ def sign(action, method, headers, data = ''):
 
 
 def verify(method, code, headers, data):
+    # Installation responses are not signed
     if method.startswith("v1/installation"):
         return
+    # Insufficient authentication errors are not signed
+    if headers["Content-Type"] == "application/json":
+        result = json.loads(data)
+        if ("Error" in result and result["Error"][0]["error_description"] == 
+                                               "Insufficient authentication."):
+            return
     ciphertext = str(code) + "\n"
     for name in sorted(headers.keys()):
         if name.startswith("X-Bunq-") and name != "X-Bunq-Server-Signature":
@@ -191,45 +199,48 @@ def default_headers():
     }
 
 
+def call_requests(action, method, data_obj):
+    data = ''
+    if data_obj:
+        data = json.dumps(data_obj)
+    headers = default_headers()
+    sign(action, method, headers, data)
+    if action == "GET":
+        reply = requests.get(url + method, headers=headers)
+    elif action == "POST":
+        reply = requests.post(url + method, headers=headers, data=data)
+    elif action == "DELETE":
+        reply = requests.delete(url + method, headers=headers)
+    verify(method, reply.status_code, reply.headers, reply.text)
+    return reply
+
+
+def call(action, method, data = None):
+    reply = call_requests(action, method, data)
+    if reply.headers["Content-Type"] != "application/json":
+        return reply.text
+    result = reply.json()
+    if ("Error" in result and result["Error"][0]["error_description"] == 
+                                               "Insufficient authentication."):
+       delete_file(session_token_file)
+       reply = call_requests(action, method, data)
+       result = reply.json()
+    if reply.headers["Content-Type"] != "application/json":
+       return reply.text
+    if "Error" in result:
+        raise Exception(result["Error"][0]["error_description"])
+    return result["Response"]
+ 
+
 # -----------------------------------------------------------------------------
 
 def get(method):
-    headers = default_headers()
-    sign('GET', method, headers)
-    reply = requests.get(url + method, headers=headers)
-    verify(method, reply.status_code, reply.headers, reply.text)
-    result = reply.json()
-    if "Error" in result:
-        raise Exception(result["Error"][0]["error_description"])
-    return result["Response"]
+    return call('GET', method)
 
 
-def get_content(method):
-    headers = default_headers()
-    sign('GET', method, headers)
-    reply = requests.get(url + method, headers=headers)
-    verify(method, reply.status_code, reply.headers, reply.text)
-    return reply.text
-
-
-def post(method, data_obj):
-    data = json.dumps(data_obj)
-    headers = default_headers()
-    sign('POST', method, headers, data)
-    reply = requests.post(url + method, headers=headers, data=data)
-    verify(method, reply.status_code, reply.headers, reply.text)
-    result = reply.json()
-    if "Error" in result:
-        raise Exception(result["Error"][0]["error_description"])
-    return result["Response"]
+def post(method, data):
+    return call('POST', method, data)
 
 
 def delete(method):
-    headers = default_headers()
-    sign('DELETE', method, headers)
-    reply = requests.delete(url + method, headers=headers)
-    verify(method, reply.status_code, reply.headers, reply.text)
-    result = reply.json()
-    if "Error" in result:
-        raise Exception(result["Error"][0]["error_description"])
-    return result["Response"]
+    return call('DELETE', method)
