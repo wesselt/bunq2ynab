@@ -17,13 +17,14 @@ def get_personal_access_token():
     token = read_file(personal_access_token_file)
     if token:
         return token.rstrip("\r\n")
-    raise Exception("Couldn't read YNAB personal access token.  Get one " +
+    raise Exception(
+        "Couldn't read YNAB personal access token.  Get one " +
         "from YNAB's developer settings and store it in " +
         personal_access_token_file)
 
 
-def call(action, method, data_obj = None):
-    headers =  {
+def call(action, method, data_obj=None):
+    headers = {
         'Authorization': 'Bearer ' + get_personal_access_token(),
         'Content-type': 'application/json'
     }

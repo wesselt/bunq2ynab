@@ -55,13 +55,13 @@ def get_private_key():
     pem_str = read_file(private_key_file)
     if pem_str:
         return crypto.load_privatekey(crypto.FILETYPE_PEM, pem_str)
-    print ("Generating new private key...")
+    print("Generating new private key...")
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 2048)
     pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    delete_file(installation_token_file);
-    delete_file(server_public_file);
-    delete_file(session_token_file);
+    delete_file(installation_token_file)
+    delete_file(server_public_file)
+    delete_file(session_token_file)
     write_file(private_key_file, pem.decode("utf-8"))
     return key
 
@@ -76,7 +76,8 @@ def get_server_public():
     pem_str = read_file(server_public_file)
     if pem_str:
         return crypto.load_publickey(crypto.FILETYPE_PEM, pem_str)
-    raise Exception("Server public key not found.  This should have been " +
+    raise Exception(
+        "Server public key not found.  This should have been " +
         "stored in " + server_public_file + " while storing the " +
         "installation token.")
 
@@ -85,7 +86,7 @@ def get_installation_token():
     token = read_file(installation_token_file)
     if token:
         return token.rstrip("\r\n")
-    print ("Requesting installation token...")
+    print("Requesting installation token...")
     public_key = get_public_key()
     pem = crypto.dump_publickey(crypto.FILETYPE_PEM, public_key)
     method = "v1/installation"
@@ -117,7 +118,7 @@ def get_local_ip():
 
 def register_device():
     ip = get_local_ip()
-    print ("Registering IP " + ip)
+    print("Registering IP " + ip)
     method = "v1/device-server"
     data = {
         "description": "bunq2ynab on " + socket.getfqdn(),
@@ -131,7 +132,7 @@ def get_session_token():
     token = read_file(session_token_file)
     if token:
         return token.rstrip("\r\n")
-    print ("Requesting session token...")
+    print("Requesting session token...")
     method = "v1/session-server"
     data = {
         "secret": get_api_token()
@@ -155,8 +156,8 @@ def sign(action, method, headers, data):
         return
     # device-server and session-server use the installation token
     # Other endpoints use a session token
-    if (method.startswith("v1/device-server") or 
-        method.startswith("v1/session-server")):
+    if (method.startswith("v1/device-server") or
+            method.startswith("v1/session-server")):
         headers['X-Bunq-Client-Authentication'] = get_installation_token()
     else:
         headers['X-Bunq-Client-Authentication'] = get_session_token()
@@ -177,8 +178,8 @@ def verify(method, code, headers, data):
     # Insufficient authentication errors are not signed
     if headers["Content-Type"] == "application/json":
         result = json.loads(data)
-        if ("Error" in result and result["Error"][0]["error_description"] == 
-                                               "Insufficient authentication."):
+        if ("Error" in result and result["Error"][0]["error_description"]
+                == "Insufficient authentication."):
             return
     ciphertext = str(code) + "\n"
     for name in sorted(headers.keys()):
@@ -193,6 +194,8 @@ def verify(method, code, headers, data):
     # Raises an exception when verification fails
     crypto.verify(x509, sig, ciphertext, 'sha256')
 
+
+# -----------------------------------------------------------------------------
 
 def call_requests(action, method, data_obj):
     data = json.dumps(data_obj) if data_obj else ''
@@ -217,13 +220,13 @@ def call_requests(action, method, data_obj):
     return reply.text
 
 
-def call(action, method, data = None):
+def call(action, method, data=None):
     result = call_requests(action, method, data)
     if isinstance(result, str):
         return result
-    if ("Error" in result and 
-        result["Error"][0]["error_description"] == 
-                                               "Insufficient authentication."):
+    if ("Error" in result and
+        result["Error"][0]["error_description"]
+            == "Insufficient authentication."):
         delete_file(session_token_file)
         result = call_requests(action, method, data)
         if isinstance(result, str):
@@ -231,7 +234,7 @@ def call(action, method, data = None):
     if "Error" in result:
         raise Exception(result["Error"][0]["error_description"])
     return result["Response"]
- 
+
 
 # -----------------------------------------------------------------------------
 

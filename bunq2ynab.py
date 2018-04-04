@@ -12,7 +12,7 @@ bunq_accountid = sys.argv[2]
 ynab_budget_id = sys.argv[3]
 ynab_account_id = sys.argv[4]
 
-print ("Creating CSV export...")
+print("Creating CSV export...")
 date_end = datetime.date.today()
 date_start = date_end - datetime.timedelta(days=7)
 data = {
@@ -25,7 +25,7 @@ method = ("v1/user/{0}/monetary-account/{1}/customer-statement"
           .format(bunq_userid, bunq_accountid))
 export = bunq.post(method, data)
 exportid = export[0]["Id"]["id"]
-print ("Created CSV export {0}.".format(exportid))
+print("Created CSV export {0}.".format(exportid))
 
 method = ("v1/user/{0}/monetary-account/{1}/customer-statement/{2}/content"
           .format(bunq_userid, bunq_accountid, exportid))
@@ -34,9 +34,9 @@ export = bunq.get(method)
 method = "v1/user/{0}/monetary-account/{1}/customer-statement/{2}".format(
          bunq_userid, bunq_accountid, exportid)
 bunq.delete(method)
-print ("Deleted export.")
+print("Deleted export.")
 
-print ("Parsing CSV export...")
+print("Parsing CSV export...")
 reader = csv.DictReader(export.splitlines(), delimiter=';', quotechar='"')
 transactions = []
 for row in reader:
@@ -51,9 +51,9 @@ for row in reader:
         "import_id": "YNAB:{0}:{1}:1".format(milliunits, row["Date"])
     })
 
-print ("Uploading transactions to YNAB...")
+print("Uploading transactions to YNAB...")
 method = "v1/budgets/" + ynab_budget_id + "/transactions/bulk"
 result = ynab.post(method, {"transactions": transactions})
 stats = result["bulk"]
-print ("Uploaded {0} new and {1} duplicate transactions.".format(
-       len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
+print("Uploaded {0} new and {1} duplicate transactions.".format(
+      len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
