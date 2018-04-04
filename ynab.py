@@ -24,7 +24,7 @@ def get_personal_access_token():
         personal_access_token_file)
 
 
-def call(action, method, data = None):
+def call(action, method, data_obj = None):
     headers =  {
         'Authorization': 'Bearer ' + get_personal_access_token(),
         'Content-type': 'application/json'
@@ -32,6 +32,7 @@ def call(action, method, data = None):
     if action == 'GET':
         reply = requests.get(url + method, headers=headers)
     elif action == 'POST':
+        data = json.dumps(data_obj)
         reply = requests.post(url + method, headers=headers, data=data)
     result = reply.json()
     if "error" in result:
