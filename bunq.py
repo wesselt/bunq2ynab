@@ -195,9 +195,7 @@ def verify(method, code, headers, data):
 
 
 def call_requests(action, method, data_obj):
-    data = ''
-    if data_obj:
-        data = json.dumps(data_obj)
+    data = json.dumps(data_obj) if data_obj else ''
     headers = {
         'Cache-Control': 'no-cache',
         'User-Agent': 'bunq2ynab',
