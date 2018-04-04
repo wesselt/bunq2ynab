@@ -8,3 +8,13 @@ private_key.txt
 public_key.txt
 server_public.txt
 session_token.txt
+
+# VIM swap file
+.*.swp
+
+# Python temporary files
+*.pyc
+__pycache__
+
+# Archive directory
+archive
