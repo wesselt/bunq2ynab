@@ -46,7 +46,7 @@ def delete_file(fname):
 def get_api_token():
     token = read_file(api_token_file)
     if token:
-        return token.rstrip("\n")
+        return token.rstrip("\r\n")
     raise Exception("BUNQ API key not found.  Add an API key " +
                     "using the app and store it in " + api_token_file)
 
@@ -84,7 +84,7 @@ def get_server_public():
 def get_installation_token():
     token = read_file(installation_token_file)
     if token:
-        return token.rstrip("\n")
+        return token.rstrip("\r\n")
     print ("Requesting installation token...")
     public_key = get_public_key()
     pem = crypto.dump_publickey(crypto.FILETYPE_PEM, public_key)
@@ -130,7 +130,7 @@ def register_device():
 def get_session_token():
     token = read_file(session_token_file)
     if token:
-        return token.rstrip("\n")
+        return token.rstrip("\r\n")
     print ("Requesting session token...")
     method = "v1/session-server"
     data = {

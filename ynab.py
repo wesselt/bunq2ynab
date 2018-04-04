@@ -16,7 +16,7 @@ def read_file(fname):
 def get_personal_access_token():
     token = read_file(personal_access_token_file)
     if token:
-        return token.rstrip("\n")
+        return token.rstrip("\r\n")
     raise Exception("Couldn't read YNAB personal access token.  Get one " +
         "from YNAB's developer settings and store it in " +
         personal_access_token_file)
