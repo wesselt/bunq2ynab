@@ -59,9 +59,9 @@ def get_private_key():
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 2048)
     pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    remove_file(installation_token_file);
-    remove_file(server_public_file);
-    remove_file(session_token_file);
+    delete_file(installation_token_file);
+    delete_file(server_public_file);
+    delete_file(session_token_file);
     write_file(private_key_file, pem.decode("utf-8"))
     return key
 
