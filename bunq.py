@@ -13,12 +13,17 @@ url = "https://api.bunq.com/"
 target_host = "api.bunq.com"
 target_port = 443  # https port
 
+# User-created file with the BUNQ API key
 api_token_file = "api_token.txt"
+
+# Files that store BUNQ installation and session state
 private_key_file = "private_key.txt"
 installation_token_file = "installation_token.txt"
 server_public_file = "server_public.txt"
 session_token_file = "session_token.txt"
 
+
+# -----------------------------------------------------------------------------
 
 def read_file(fname):
     try:
@@ -146,9 +151,11 @@ def get_session_token():
 # -----------------------------------------------------------------------------
 
 def sign(action, method, headers, data):
-    # Installation responses are not signed
+    # Installation requests are not signed
     if method.startswith("v1/installation"):
         return
+    # device-server and session-server use the installation token
+    # Other endpoints use a session token
     if (method.startswith("v1/device-server") or 
         method.startswith("v1/session-server")):
         headers['X-Bunq-Client-Authentication'] = get_installation_token()
