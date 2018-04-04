@@ -176,7 +176,7 @@ def verify(method, code, headers, data):
     x509.set_pubkey(server_public)
     sig_str = headers["X-Bunq-Server-Signature"]
     sig = base64.b64decode(sig_str)
-    # Will raise an exception when verification fails
+    # Raises an exception when verification fails
     crypto.verify(x509, sig, ciphertext, 'sha256')
 
 
