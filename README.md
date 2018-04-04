@@ -24,7 +24,7 @@ YNAB budgetid and accountid from `list_budget.py`, and run:
     python3 bunq2ynab.py <bunq userid> <bunq accountid> <ynab budgetid> <ynab accountid>
 ```
 
-## Steps to read transactions from BUNQ
+## What bunq2ynab does to read transactions from BUNQ
 
 1. Generate a public/private keypair
 2. Register the keypair with BUNQ through the "installation" endpoint.  Store the returned installation_token 
@@ -35,7 +35,7 @@ and the server's public key
 6. Retrieve the CSV using the "user/xxx/monetary-account/xxx/customer-statement/content" endpoint
 7. Delete the CSV using the "user/xxx/monetary-account/xxx/customer-statement" endpoint
 
-## Steps to upload transactions to YNAB
+## What bunq2ynab does to upload transactions to YNAB
 
 1. Post the transactions to the "v1/budgets/xxx/transactions/bulk" endpoint
 
