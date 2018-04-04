@@ -214,21 +214,22 @@ def call_requests(action, method, data_obj):
     elif action == "DELETE":
         reply = requests.delete(url + method, headers=headers)
     verify(method, reply.status_code, reply.headers, reply.text)
-    return reply
+    if reply.headers["Content-Type"] == "application/json":
+        return reply.json()
+    return reply.text
 
 
 def call(action, method, data = None):
-    reply = call_requests(action, method, data)
-    if reply.headers["Content-Type"] != "application/json":
-        return reply.text
-    result = reply.json()
-    if ("Error" in result and result["Error"][0]["error_description"] == 
+    result = call_requests(action, method, data)
+    if isinstance(result, str):
+        return result
+    if ("Error" in result and 
+        result["Error"][0]["error_description"] == 
                                                "Insufficient authentication."):
-       delete_file(session_token_file)
-       reply = call_requests(action, method, data)
-       result = reply.json()
-    if reply.headers["Content-Type"] != "application/json":
-       return reply.text
+        delete_file(session_token_file)
+        result = call_requests(action, method, data)
+        if isinstance(result, str):
+            return result
     if "Error" in result:
         raise Exception(result["Error"][0]["error_description"])
     return result["Response"]
