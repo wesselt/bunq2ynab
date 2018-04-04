@@ -27,7 +27,7 @@ YNAB budgetid and accountid from `list_budget.py`, and run:
 ## What bunq2ynab does to read transactions from BUNQ
 
 1. Generate a public/private keypair
-2. Register the keypair with BUNQ through the "installation" endpoint.  Store the returned installation_token 
+2. Register the keypair with BUNQ through the "installation" endpoint.  Store the returned installation token 
 and the server's public key
 3. Register your IP with BUNQ through the "device-server" endpoint
 4. Get a session token through the "session-server" endpoint.  Store the returned  session token
