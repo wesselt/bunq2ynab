@@ -1,5 +1,6 @@
 import json
 import hashlib
+import os
 import requests
 
 
@@ -8,11 +9,9 @@ personal_access_token_file = "personal_access_token.txt"
 
 
 def read_file(fname):
-    try:
+    if os.path.isfile(fname):
         with open(fname, 'r') as f:
             return f.read()
-    except:
-        pass
 
 
 def get_personal_access_token():

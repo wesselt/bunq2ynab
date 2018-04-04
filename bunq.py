@@ -26,11 +26,9 @@ session_token_file = "session_token.txt"
 # -----------------------------------------------------------------------------
 
 def read_file(fname):
-    try:
+    if os.path.isfile(fname):
         with open(fname, 'r') as f:
             return f.read()
-    except:
-        pass
 
 
 def write_file(fname, data):
