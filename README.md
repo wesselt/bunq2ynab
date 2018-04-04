@@ -32,7 +32,7 @@ and the server's public key
 4. Get a session token through the "session-server" endpoint.  Store the returned  session token
 5. Prepare a CSV export using the "user/xxx/monetary-account/xxx/customer-statement" endpoint
 6. Retrieve the CSV using the "user/xxx/monetary-account/xxx/customer-statement/content" endpoint
-7. Delete the CSV export using the "user/xxx/monetary-account/xxx/customer-statement" endpoint
+7. Delete the CSV using the "user/xxx/monetary-account/xxx/customer-statement" endpoint
 
 ## Steps to upload transactions to YNAB
 
