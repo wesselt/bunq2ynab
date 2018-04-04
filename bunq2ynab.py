@@ -14,7 +14,7 @@ ynab_account_id = sys.argv[4]
 
 print ("Creating CSV export...")
 date_end = datetime.date.today()
-date_start = date_end - datetime.timedelta(days=2)
+date_start = date_end - datetime.timedelta(days=7)
 data = {
     "statement_format": "CSV",
     "date_start": date_start.strftime("%Y-%m-%d"),
