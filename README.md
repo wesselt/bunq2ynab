@@ -40,7 +40,7 @@ and the server's public key
 
 ## Links
 
-BUNQ API documentation: https://doc.bunq.com/
-YNAB API documentation: https://api.youneedabudget.com/
-YNAB API endpoints: https://api.youneedabudget.com/v1
-Request YNAB API access here: https://github.com/ynab/ynab-sdk-js
+- BUNQ API documentation: https://doc.bunq.com/
+- YNAB API documentation: https://api.youneedabudget.com/
+- YNAB API endpoints: https://api.youneedabudget.com/v1
+- Request YNAB API access here: https://github.com/ynab/ynab-sdk-js
