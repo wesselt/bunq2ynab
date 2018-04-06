@@ -12,44 +12,30 @@ bunq_accountid = sys.argv[2]
 ynab_budget_id = sys.argv[3]
 ynab_account_id = sys.argv[4]
 
-print("Creating CSV export...")
-date_end = datetime.date.today()
-date_start = date_end - datetime.timedelta(days=7)
-data = {
-    "statement_format": "CSV",
-    "date_start": date_start.strftime("%Y-%m-%d"),
-    "date_end": date_end.strftime("%Y-%m-%d"),
-    "regional_format": "EUROPEAN"
-}
-method = ("v1/user/{0}/monetary-account/{1}/customer-statement"
+print("Reading list of payments...")
+method = ("v1/user/{0}/monetary-account/{1}/payment?count=24"
           .format(bunq_userid, bunq_accountid))
-export = bunq.post(method, data)
-exportid = export[0]["Id"]["id"]
-print("Created CSV export {0}.".format(exportid))
+payments = bunq.get(method)
 
-method = ("v1/user/{0}/monetary-account/{1}/customer-statement/{2}/content"
-          .format(bunq_userid, bunq_accountid, exportid))
-export = bunq.get(method)
-
-method = "v1/user/{0}/monetary-account/{1}/customer-statement/{2}".format(
-         bunq_userid, bunq_accountid, exportid)
-bunq.delete(method)
-print("Deleted export.")
-
-print("Parsing CSV export...")
-reader = csv.DictReader(export.splitlines(), delimiter=';', quotechar='"')
+print("Translating payments...")
 transactions = []
-for row in reader:
-    amount = Decimal(row["Amount"].replace(",", "."))
-    milliunits = str((1000 * amount).quantize(1))
+for p in [p["Payment"] for p in payments]:
+    amount = p["amount"]["value"]
+    if p["amount"]["currency"] != "EUR":
+        raise Exception("Non-euro payment: " + p["amount"]["currency"])
+    date = p["created"][:10]
+    payee = p["counterparty_alias"]["display_name"]
+    description = p["description"]
+
+    milliunits = str((1000 * Decimal(amount)).quantize(1))
     transactions.append({
         "account_id": ynab_account_id,
-        "date": row["Date"],
+        "date": date,
         "amount": milliunits,
-        "payee_name": row["Counterparty"],
-        "memo": row["Description"][:100],  # YNAB memo is max 100 chars
+        "payee_name": payee,
+        "memo": description[:100],  # YNAB memo is max 100 chars
         "cleared": "cleared",
-        "import_id": "YNAB:{0}:{1}:1".format(milliunits, row["Date"])
+        "import_id": "YNAB:{0}:{1}:1".format(milliunits, date)
     })
 
 print("Uploading transactions to YNAB...")
