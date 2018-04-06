@@ -31,9 +31,7 @@ YNAB budgetid and accountid from `list_budget.py`, and run:
 and the server's public key
 3. Register your IP with BUNQ through the "device-server" endpoint
 4. Get a session token through the "session-server" endpoint.  Store the returned  session token
-5. Prepare a CSV export using the "user/xxx/monetary-account/xxx/customer-statement" endpoint
-6. Retrieve the CSV using the "user/xxx/monetary-account/xxx/customer-statement/content" endpoint
-7. Delete the CSV using the "user/xxx/monetary-account/xxx/customer-statement" endpoint
+5. Retrieve transactions from the "user/xxx/monetary-account/xxx/payment" endpoint
 
 ## What bunq2ynab does to upload transactions to YNAB
 
