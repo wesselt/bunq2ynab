@@ -19,7 +19,7 @@ method = ("v1/user/{0}/monetary-account/{1}/payment?count=24"
           .format(bunq_user_id, bunq_account_id))
 payments = bunq.get(method)
 
-print("Getting YNAB UUIDs...")
+print("Getting YNAB identifiers...")
 ynab_budget_id = ynab.get_budget_id(ynab_budget_name)
 ynab_account_id = ynab.get_account_id(ynab_budget_id, ynab_account_name)
 
