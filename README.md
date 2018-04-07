@@ -18,10 +18,10 @@ Store the token in "personal_access_token.txt".
 ```
     python3 list_budget.py
 ```
-6. You're all set to upload transactions!  Pick a BUNQ userid and accountid from `list_user.py`, and a 
+6. You're all set to upload transactions!  Pick a BUNQ user and account from `list_user.py`, and a 
 YNAB budget and account from `list_budget.py`, and run:
 ```
-    python3 bunq2ynab.py <bunq userid> <bunq accountid> <ynab budget> <ynab account>
+    python3 bunq2ynab.py <bunq user> <bunq account> <ynab budget> <ynab account>
 ```
 
 ## What bunq2ynab does to read transactions from BUNQ

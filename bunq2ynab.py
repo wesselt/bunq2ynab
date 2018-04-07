@@ -5,14 +5,18 @@ import bunq
 import ynab
 
 
-bunq_userid = sys.argv[1]
-bunq_accountid = sys.argv[2]
+bunq_user_name = sys.argv[1]
+bunq_account_name = sys.argv[2]
 ynab_budget_name = sys.argv[3]
 ynab_account_name = sys.argv[4]
 
+print("Getting BUNQ identifiers...")
+bunq_user_id = bunq.get_user_id(bunq_user_name)
+bunq_account_id = bunq.get_account_id(bunq_user_id, bunq_account_name)
+
 print("Reading list of payments...")
 method = ("v1/user/{0}/monetary-account/{1}/payment?count=24"
-          .format(bunq_userid, bunq_accountid))
+          .format(bunq_user_id, bunq_account_id))
 payments = bunq.get(method)
 
 print("Getting YNAB UUIDs...")

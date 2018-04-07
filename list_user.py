@@ -7,12 +7,11 @@ def print_accounts(userid):
     accounts = bunq.get(method)
     for a in accounts:
         for k, v in a.items():
-            print("  {0:>8}  {1:25} ({2})".format(
-                                                 v["id"], v["description"], k))
+            print("  {0:28}  ({1})".format(v["description"], k))
 
 
 users = bunq.get('v1/user')
 for u in users:
     for k, v in u.items():
-        print("{0:>8}  {1:25} ({2})".format(v["id"], v["display_name"], k))
+        print("{0:30}  ({1})".format(v["display_name"], k))
         print_accounts(v["id"])
