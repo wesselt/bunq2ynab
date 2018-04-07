@@ -22,6 +22,9 @@ installation_token_file = "installation_token.txt"
 server_public_file = "server_public.txt"
 session_token_file = "session_token.txt"
 
+# 1 to log http calls, 2 to include headers
+log_level = 0
+
 
 # -----------------------------------------------------------------------------
 
@@ -197,6 +200,35 @@ def verify(method, code, headers, data):
 
 # -----------------------------------------------------------------------------
 
+def log_request(action, method, headers, data):
+    if log_level < 1:
+        return
+    print("******************************")
+    print("{0} {1}".format(action, method))
+    if log_level > 1:
+        for k, v in headers.items():
+            print("  {0}: {1}".format(k, v))
+    if data:
+        print("-----")
+        print(json.dumps(data, indent=2))
+        print("-----")
+
+
+def log_reply(reply):
+    if log_level < 1:
+        return
+    print("Status: {0}".format(reply.status_code))
+    if log_level > 1:
+        for k, v in reply.headers.items():
+            print("  {0}: {1}".format(k, v))
+    print("----------")
+    if reply.headers["Content-Type"] == "application/json":
+        print(json.dumps(reply.json(), indent=2))
+    else:
+        print(reply.text)
+    print("******************************")
+
+
 def call_requests(action, method, data_obj):
     data = json.dumps(data_obj) if data_obj else ''
     headers = {
@@ -208,12 +240,16 @@ def call_requests(action, method, data_obj):
         'X-Bunq-Region': 'nl_NL'
     }
     sign(action, method, headers, data)
+    log_request(action, method, headers, data)
     if action == "GET":
         reply = requests.get(url + method, headers=headers)
     elif action == "POST":
         reply = requests.post(url + method, headers=headers, data=data)
+    elif action == "PUT":
+        reply = requests.put(url + method, headers=headers, data=data)
     elif action == "DELETE":
         reply = requests.delete(url + method, headers=headers)
+    log_reply(reply)
     verify(method, reply.status_code, reply.headers, reply.text)
     if reply.headers["Content-Type"] == "application/json":
         return reply.json()
@@ -237,6 +273,11 @@ def call(action, method, data=None):
 
 
 # -----------------------------------------------------------------------------
+
+def set_log_level(level):
+    global log_level
+    log_level = level
+
 
 def get(method):
     return call('GET', method)
