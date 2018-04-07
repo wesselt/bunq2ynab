@@ -95,7 +95,7 @@ def get_budget_id(budget_id):
 
     reply = get('v1/budgets')
     for b in reply["budgets"]:
-        if b["name"] == budget_id:
+        if b["name"].casefold() == budget_id.casefold():
             return b["id"]
     raise Exception("YNAB budget '{0}' not found".format(budget_id))
 
@@ -106,7 +106,7 @@ def get_account_id(budget_id, account_id):
 
     reply = get('v1/budgets/' + budget_id + "/accounts")
     for a in reply["accounts"]:
-        if a["name"] == account_id:
+        if a["name"].casefold() == account_id.casefold():
             return a["id"]
     raise Exception("YNAB account '{0}' not found".format(account_id))
 
