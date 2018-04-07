@@ -89,26 +89,26 @@ def is_uuid(id):
         return False
 
 
-def get_budget_id(budget_id):
-    if is_uuid(budget_id):
-        return budget_id
+def get_budget_id(budget_name):
+    if is_uuid(budget_name):
+        return budget_name
 
     reply = get('v1/budgets')
     for b in reply["budgets"]:
-        if b["name"].casefold() == budget_id.casefold():
+        if b["name"].casefold() == budget_name.casefold():
             return b["id"]
-    raise Exception("YNAB budget '{0}' not found".format(budget_id))
+    raise Exception("YNAB budget '{0}' not found".format(budget_name))
 
 
-def get_account_id(budget_id, account_id):
-    if is_uuid(account_id):
-        return account_id
+def get_account_id(budget_id, account_name):
+    if is_uuid(account_name):
+        return account_name
 
     reply = get('v1/budgets/' + budget_id + "/accounts")
     for a in reply["accounts"]:
-        if a["name"].casefold() == account_id.casefold():
+        if a["name"].casefold() == account_name.casefold():
             return a["id"]
-    raise Exception("YNAB account '{0}' not found".format(account_id))
+    raise Exception("YNAB account '{0}' not found".format(account_name))
 
 
 # -----------------------------------------------------------------------------
