@@ -3,12 +3,13 @@ import json
 import sys
 
 
-userid = sys.argv[1]
+bunq_user_name = sys.argv[1]
 toggle_category = sys.argv[2]
 toggle_url = sys.argv[3]
 
 
-method = "v1/user/{0}".format(userid)
+bunq_user_id = bunq.get_user_id(bunq_user_name)
+method = "v1/user/{0}".format(bunq_user_id)
 users = bunq.get(method)
 for u in [u["UserPerson"] for u in users]:
     print("User: {0} ({1})".format(u["display_name"], u["id"]))
@@ -35,5 +36,5 @@ for u in [u["UserPerson"] for u in users]:
     data = {
         "notification_filters": new_notifications
     }
-    method = "v1/user-person/{0}".format(userid)
+    method = "v1/user-person/{0}".format(bunq_user_id)
     users = bunq.put(method, data)

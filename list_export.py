@@ -1,11 +1,14 @@
 import bunq
 import sys
 
-userid = sys.argv[1]
-accountid = sys.argv[2]
+bunq_user_name = sys.argv[1]
+bunq_account_name = sys.argv[2]
+
+bunq_user_id = bunq.get_user_id(bunq_user_name)
+bunq_account_id = bunq.get_account_id(bunq_user_id, bunq_account_name)
 
 method = ("v1/user/{0}/monetary-account/{1}/customer-statement?count=200"
-          .format(userid, accountid))
+          .format(bunq_user_id, bunq_account_id))
 exports = bunq.get(method)
 for e in exports:
     for k, v in e.items():

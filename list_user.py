@@ -16,5 +16,5 @@ def print_accounts(userid):
 users = bunq.get('v1/user')
 for u in users:
     for k, v in u.items():
-        print("{0}  ({1})".format(v["display_name"], k))
+        print('{0} "{1}"'.format(k, v["display_name"]))
         print_accounts(v["id"])
