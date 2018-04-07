@@ -19,9 +19,9 @@ Store the token in "personal_access_token.txt".
     python3 list_budget.py
 ```
 6. You're all set to upload transactions!  Pick a BUNQ userid and accountid from `list_user.py`, and a 
-YNAB budgetid and accountid from `list_budget.py`, and run:
+YNAB budget and account from `list_budget.py`, and run:
 ```
-    python3 bunq2ynab.py <bunq userid> <bunq accountid> <ynab budgetid> <ynab accountid>
+    python3 bunq2ynab.py <bunq userid> <bunq accountid> <ynab budget> <ynab account>
 ```
 
 ## What bunq2ynab does to read transactions from BUNQ
@@ -35,7 +35,9 @@ and the server's public key
 
 ## What bunq2ynab does to upload transactions to YNAB
 
-1. Post the transactions to the "v1/budgets/xxx/transactions/bulk" endpoint
+1. Translate budget name using the "v1/budgets" endpoint
+2. Translate account name using the "v1/budgets/xxx/accounts" endpoint
+3. Post the transactions to the "v1/budgets/xxx/transactions/bulk" endpoint
 
 ## Links
 

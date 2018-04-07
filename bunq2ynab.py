@@ -7,13 +7,17 @@ import ynab
 
 bunq_userid = sys.argv[1]
 bunq_accountid = sys.argv[2]
-ynab_budget_id = sys.argv[3]
-ynab_account_id = sys.argv[4]
+ynab_budget_name = sys.argv[3]
+ynab_account_name = sys.argv[4]
 
 print("Reading list of payments...")
 method = ("v1/user/{0}/monetary-account/{1}/payment?count=24"
           .format(bunq_userid, bunq_accountid))
 payments = bunq.get(method)
+
+print("Getting YNAB UUIDs...")
+ynab_budget_id = ynab.get_budget_id(ynab_budget_name)
+ynab_account_id = ynab.get_account_id(ynab_budget_id, ynab_account_name)
 
 print("Translating payments...")
 transactions = []

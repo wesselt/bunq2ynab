@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import uuid
 
 
 url = 'https://api.youneedabudget.com/'
@@ -27,6 +28,8 @@ def get_personal_access_token():
         "from YNAB's developer settings and store it in " +
         personal_access_token_file)
 
+
+# -----------------------------------------------------------------------------
 
 def log_request(action, method, headers, data):
     if log_level < 1:
@@ -74,6 +77,38 @@ def call(action, method, data_obj=None):
         raise Exception("{0} (details: {1})".format(
                            result["error"]["name"], result["error"]["detail"]))
     return result["data"]
+
+
+# -----------------------------------------------------------------------------
+
+def is_uuid(id):
+    try:
+        uuid.UUID("{" + id + "}")
+        return True
+    except ValueError as e:
+        return False
+
+
+def get_budget_id(budget_id):
+    if is_uuid(budget_id):
+        return budget_id
+
+    reply = get('v1/budgets')
+    for b in reply["budgets"]:
+        if b["name"] == budget_id:
+            return b["id"]
+    raise Exception("YNAB budget '{0}' not found".format(budget_id))
+
+
+def get_account_id(budget_id, account_id):
+    if is_uuid(account_id):
+        return account_id
+
+    reply = get('v1/budgets/' + budget_id + "/accounts")
+    for a in reply["accounts"]:
+        if a["name"] == account_id:
+            return a["id"]
+    raise Exception("YNAB account '{0}' not found".format(account_id))
 
 
 # -----------------------------------------------------------------------------
