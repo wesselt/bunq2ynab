@@ -287,5 +287,9 @@ def post(method, data):
     return call('POST', method, data)
 
 
+def put(method, data):
+    return call('PUT', method, data)
+
+
 def delete(method):
     return call('DELETE', method)
