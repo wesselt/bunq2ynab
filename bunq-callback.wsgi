@@ -5,23 +5,26 @@ import subprocess
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-handler = logging.handlers.SysLogHandler(address = '/dev/log')
+handler = logging.handlers.SysLogHandler(address='/dev/log')
 log.addHandler(handler)
+
+
+def try_application(environ):
+    log.debug("Remove address = %s", environ["REMOTE_ADDR"])
+    log.debug("Starting process...")
+    subprocess.Popen("bash ../run_bunq2ynab.sh", shell=True,
+                     stdin=None, stdout=None, stderr=None, close_fds=True)
+    log.debug("Process started")
 
 
 def application(environ, start_response):
     log.debug("Incoming call")
-    log.debug("Remove address = %s", environ["REMOTE_ADDR"])
-    start_response('200 OK', [('Content-Type', 'application/json')])
-
-    # Start synch script in background
     try:
-        p = subprocess.Popen("bash ../run_bunq2ynab.sh", shell=True,
-             stdin=None, stdout=None, stderr=None, close_fds=True)
-        log.debug("Process started")
+        try_application(environ)
+        start_response('200 OK', [('Content-Type', 'application/json')])
+        return [b'{"hannibal": "I love it when the plan comes together"}']
     except e:
-        log.debug("Failed to start process")
+        log.debug("Exception processing message")
         log.debug(e)
-        return [b'{"error": "Error processing message"}']
-
-    return [b'{"hannibal": "I love it when the plan comes together"}']
+        start_response('500 ERROR', [('Content-Type', 'application/json')])
+        return [b'{"murdock": "Looks like we\'re going to crash"}']
