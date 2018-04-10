@@ -15,7 +15,7 @@ for v in [p["Payment"] for p in payments]:
     print ("{0:>8} {1:3}  {2}  {3} {4}".format(
         v["amount"]["value"],
         v["amount"]["currency"],
-        v["created"][:15],
+        v["created"][:16],
         v["counterparty_alias"]["iban"],
         v["counterparty_alias"]["display_name"]
     ))
