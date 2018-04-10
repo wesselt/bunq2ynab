@@ -38,7 +38,7 @@ for p in [p["Payment"] for p in payments]:
         "account_id": ynab_account_id,
         "date": date,
         "amount": milliunits,
-        "payee_name": payee,
+        "payee_name": payee[:50],  # YNAB payee is max 50 chars
         "memo": description[:100],  # YNAB memo is max 100 chars
         "cleared": "cleared",
         "import_id": "YNAB:{0}:{1}:1".format(milliunits, date)
