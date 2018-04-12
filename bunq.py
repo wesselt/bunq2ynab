@@ -285,8 +285,8 @@ def call(action, method, data=None):
     if isinstance(result, str):
         return result
     if ("Error" in result and
-        result["Error"][0]["error_description"]
-            == "Insufficient authentication."):
+            result["Error"][0]["error_description"]
+                == "Insufficient authorisation."):
         delete_file(session_token_file)
         result = call_requests(action, method, data)
         if isinstance(result, str):
