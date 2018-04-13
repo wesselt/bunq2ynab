@@ -23,7 +23,7 @@ def application(environ, start_response):
         try_application(environ)
         start_response('200 OK', [('Content-Type', 'application/json')])
         return [b'{"hannibal": "I love it when the plan comes together"}']
-    except e:
+    except Exception as e:
         log.debug("Exception processing message")
         log.debug(e)
         start_response('500 ERROR', [('Content-Type', 'application/json')])
