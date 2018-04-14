@@ -14,8 +14,9 @@ log_level = 0
 # -----------------------------------------------------------------------------
 
 def read_file(fname):
-    if os.path.isfile(fname):
-        with open(fname, 'r') as f:
+    fn = os.path.join(os.path.dirname(__file__), fname)
+    if os.path.isfile(fn):
+        with open(fn, 'r') as f:
             return f.read()
 
 

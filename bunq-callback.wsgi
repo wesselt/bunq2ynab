@@ -12,7 +12,7 @@ log.addHandler(handler)
 def try_application(environ):
     log.debug("Remove address = %s", environ["REMOTE_ADDR"])
     log.debug("Starting process...")
-    subprocess.Popen("bash ../run_bunq2ynab.sh", shell=True,
+    subprocess.Popen("/bin/bash ../run_bunq2ynab.sh", shell=True,
                      stdin=None, stdout=None, stderr=None, close_fds=True)
     log.debug("Process started")
 

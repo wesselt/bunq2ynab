@@ -28,20 +28,25 @@ log_level = 0
 
 # -----------------------------------------------------------------------------
 
+def fname_to_path(fname):
+    return os.path.join(os.path.dirname(__file__), fname)
+
 def read_file(fname):
-    if os.path.isfile(fname):
-        with open(fname, 'r') as f:
+    fn = fname_to_path(fname)
+    if os.path.isfile(fn):
+        with open(fn, 'r') as f:
             return f.read()
 
 
 def write_file(fname, data):
-    with open(fname, 'w') as f:
+    with open(fname_to_path(fname), 'w') as f:
         f.write(data)
 
 
 def delete_file(fname):
-    if os.path.isfile(fname):
-        os.unlink(fname)
+    fn = fname_to_path(fname)
+    if os.path.isfile(fn):
+        os.unlink(fn)
 
 
 # -----------------------------------------------------------------------------
