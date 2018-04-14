@@ -45,8 +45,27 @@ def write_file(fname, data):
 def delete_file(fname):
     fn = fname_to_path(fname)
     if os.path.isfile(fn):
+        print("Deleting file {0}...".format(fname))
         os.unlink(fn)
 
+
+def get_modification_time(fname):
+    fn = fname_to_path(fname)
+    if os.path.isfile(fn):
+        return os.path.getmtime(fn)
+
+
+def delete_old(fname, depends_on_fnames):
+    my_time = get_modification_time(fname)
+    if not my_time:
+         return
+    for depends_on in depends_on_fnames:
+        their_time = get_modification_time(depends_on)
+        if their_time and my_time < their_time:
+            print("File {0} should not be older than {1}, removing...".format(
+                fname, depends_on))
+            delete_file(fname)
+            return
 
 # -----------------------------------------------------------------------------
 
@@ -59,6 +78,7 @@ def get_api_token():
 
 
 def get_private_key():
+    delete_old(private_key_file, [api_token_file])
     pem_str = read_file(private_key_file)
     if pem_str:
         return crypto.load_privatekey(crypto.FILETYPE_PEM, pem_str)
@@ -66,9 +86,6 @@ def get_private_key():
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 2048)
     pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    delete_file(installation_token_file)
-    delete_file(server_public_file)
-    delete_file(session_token_file)
     write_file(private_key_file, pem.decode("utf-8"))
     return key
 
@@ -79,17 +96,8 @@ def get_public_key():
     return crypto.load_publickey(crypto.FILETYPE_PEM, pem)
 
 
-def get_server_public():
-    pem_str = read_file(server_public_file)
-    if pem_str:
-        return crypto.load_publickey(crypto.FILETYPE_PEM, pem_str)
-    raise Exception(
-        "Server public key not found.  This should have been " +
-        "stored in " + server_public_file + " while storing the " +
-        "installation token.")
-
-
 def get_installation_token():
+    delete_old(installation_token_file, [api_token_file, private_key_file])
     token = read_file(installation_token_file)
     if token:
         return token.rstrip("\r\n")
@@ -117,6 +125,18 @@ def get_installation_token():
     return installation_token
 
 
+def get_server_public():
+    delete_old(server_public_file, [api_token_file, private_key_file, 
+        installation_token_file])
+    pem_str = read_file(server_public_file)
+    if pem_str:
+        return crypto.load_publickey(crypto.FILETYPE_PEM, pem_str)
+    raise Exception(
+        "Server public key not found.  This should have been " +
+        "stored in " + server_public_file + " while storing the " +
+        "installation token.")
+
+
 def register_device():
     ip = requests.get(public_ip_url).text
     print("Registering IP " + ip)
@@ -130,6 +150,8 @@ def register_device():
 
 
 def get_session_token():
+    delete_old(session_token_file, [api_token_file, private_key_file, 
+        installation_token_file, server_public_file])
     token = read_file(session_token_file)
     if token:
         return token.rstrip("\r\n")
