@@ -9,7 +9,7 @@ def print_accounts(budget_id):
         balance = Decimal(a["balance"])/Decimal(1000)
         print("  {0:10,}  {1:<25} ({2})".format(
             balance, a["name"], a["type"]))
-        #print("  {0:<25}  account id: {1}".format("", a["id"]))
+        # print("  {0:<25}  account id: {1}".format("", a["id"]))
 
 
 result = ynab.get("v1/budgets")

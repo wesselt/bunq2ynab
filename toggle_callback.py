@@ -17,8 +17,8 @@ for u in [u["UserPerson"] for u in users]:
     removed_notification = False
     for nf in u["notification_filters"]:
         if (nf["notification_delivery_method"] == "URL" and
-              nf["category"] == toggle_category and
-              nf.get("notification_target", None) == toggle_url):
+                nf["category"] == toggle_category and
+                nf.get("notification_target", None) == toggle_url):
             print("Removing callback...")
             removed_notification = True
         else:

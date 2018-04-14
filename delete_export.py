@@ -7,6 +7,7 @@ bunq_account_name = sys.argv[2]
 bunq_user_id = bunq.get_user_id(bunq_user_name)
 bunq_account_id = bunq.get_account_id(bunq_user_id, bunq_account_name)
 
+
 def delete_export(export_id):
     method = "v1/user/{0}/monetary-account/{1}/customer-statement/{2}".format(
              bunq_user_id, bunq_account_id, export_id)

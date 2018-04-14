@@ -30,6 +30,7 @@ log_level = 0
 def fname_to_path(fname):
     return os.path.join(os.path.dirname(__file__), fname)
 
+
 def read_file(fname):
     fn = fname_to_path(fname)
     if os.path.isfile(fn):
@@ -58,7 +59,7 @@ def get_modification_time(fname):
 def delete_old(fname, depends_on_fnames):
     my_time = get_modification_time(fname)
     if not my_time:
-         return
+        return
     for depends_on in depends_on_fnames:
         their_time = get_modification_time(depends_on)
         if their_time and my_time < their_time:
@@ -66,6 +67,7 @@ def delete_old(fname, depends_on_fnames):
                 fname, depends_on))
             delete_file(fname)
             return
+
 
 # -----------------------------------------------------------------------------
 
@@ -126,8 +128,8 @@ def get_installation_token():
 
 
 def get_server_public():
-    delete_old(server_public_file, [api_token_file, private_key_file, 
-        installation_token_file])
+    delete_old(server_public_file, [api_token_file, private_key_file,
+               installation_token_file])
     pem_str = read_file(server_public_file)
     if pem_str:
         return crypto.load_publickey(crypto.FILETYPE_PEM, pem_str)
@@ -150,8 +152,8 @@ def register_device():
 
 
 def get_session_token():
-    delete_old(session_token_file, [api_token_file, private_key_file, 
-        installation_token_file, server_public_file])
+    delete_old(session_token_file, [api_token_file, private_key_file,
+               installation_token_file, server_public_file])
     token = read_file(session_token_file)
     if token:
         return token.rstrip("\r\n")
@@ -306,7 +308,7 @@ def call(action, method, data=None):
         return result
     if ("Error" in result and
             result["Error"][0]["error_description"]
-                == "Insufficient authorisation."):
+            == "Insufficient authorisation."):
         delete_file(session_token_file)
         result = call_requests(action, method, data)
         if isinstance(result, str):
