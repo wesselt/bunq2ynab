@@ -4,7 +4,7 @@ A python script to upload BUNQ transactions to YNAB
 
 ## Installation
 
-1. Install [Python 3](https://www.python.org/) and [pyOpenSSL](https://pyopenssl.org/en/stable/install.html).  (This worked for me on Debian: `sudo pip3 install pyopenssl`.)
+1. Install [Python 3](https://www.python.org/), [Requests](http://docs.python-requests.org/en/master/) and [pyOpenSSL](https://pyopenssl.org/en/stable/install.html).  (This worked for me on Debian: `sudo pip3 install requests pyopenssl`.)
 2. Create a BUNQ "API key" in the BUNQ mobile app.  Click your picture, then Security, API keys, then
 add a key using the plus on the top right.  Choose to "Reveal" the API key and share it.  Store the API key 
 in "api_token.txt".
