@@ -13,7 +13,7 @@ in "api_token.txt".
     python3 list_user.py
 ```
 4. Create a YNAB "Personal Access Token" in the YNAB website https://app.youneedabudget.com/settings/developer.
-Store the token in "personal_access_token.txt".
+Store the token in "personal_access_token.txt".  If you don't see the developer section, [request it here](https://support.youneedabudget.com/t/x1p42s/unable-to-generate-api-access-token-no-developer-section-under-my-account).
 5. Verify that the link with YNAB works by requesting the list of budgets:
 ```
     python3 list_budget.py
