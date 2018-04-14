@@ -27,11 +27,13 @@ YNAB budget and account from `list_budget.py`, and run:
 ## What bunq2ynab does to read transactions from BUNQ
 
 1. Generate a public/private keypair
-2. Register the keypair with BUNQ through the "installation" endpoint.  Store the returned installation token 
+2. Register the keypair with BUNQ through the "v1/installation" endpoint.  Store the returned installation token 
 and the server's public key
-3. Register your IP with BUNQ through the "device-server" endpoint
-4. Get a session token through the "session-server" endpoint.  Store the returned  session token
-5. Retrieve transactions from the "user/xxx/monetary-account/xxx/payment" endpoint
+3. Register your IP with BUNQ through the "v1/device-server" endpoint
+4. Get a session token through the "v1/session-server" endpoint.  Store the returned  session token
+5. Translate user names using the "v1/user" endpoint
+6. Translate account names through the "v1/user/xxx/monetary-account" endpoint
+7. Retrieve transactions from the "v1/user/xxx/monetary-account/xxx/payment" endpoint
 
 ## What bunq2ynab does to upload transactions to YNAB
 
