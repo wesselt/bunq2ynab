@@ -10,8 +10,7 @@ import sys
 url = "https://api.bunq.com/"
 
 # Endpoint to determine our public facing IP for device-server
-target_host = "api.bunq.com"
-target_port = 443  # https port
+public_ip_url = "http://ip.42.pl/raw"
 
 # User-created file with the BUNQ API key
 api_token_file = "api_token.txt"
@@ -118,14 +117,8 @@ def get_installation_token():
     return installation_token
 
 
-def get_local_ip():
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.connect((target_host, target_port))
-        return s.getsockname()[0]
-
-
 def register_device():
-    ip = get_local_ip()
+    ip = requests.get(public_ip_url).text
     print("Registering IP " + ip)
     method = "v1/device-server"
     data = {
