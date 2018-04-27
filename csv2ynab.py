@@ -20,9 +20,9 @@ if input_lines[0].startswith('"Date";'):
 elif input_lines[0].startswith('"Date",'):
     delimiter = ","
 else:
-    raise Exception("Unexpected first line: " + lines [0])
+    raise Exception("Unexpected first line: " + lines[0])
 
-print ("Reading CSV with delimiter '{0}'...".format(delimiter))
+print("Reading CSV with delimiter '{0}'...".format(delimiter))
 reader = csv.DictReader(input_lines, delimiter=delimiter, quotechar='"')
 transactions = []
 for row in reader:
