@@ -18,11 +18,20 @@ Store the token in "personal_access_token.txt".  If you don't see the developer 
 ```
     python3 list_budget.py
 ```
-6. You're all set to upload transactions!  Pick a BUNQ user and account from `list_user.py`, and a 
-YNAB budget and account from `list_budget.py`, and run:
+6. You're all set to upload transactions!  Pick a BUNQ user and account from `python3 list_user.py`, and a 
+YNAB budget and account from `python3 list_budget.py`, and run:
 ```
     python3 bunq2ynab.py <bunq user> <bunq account> <ynab budget> <ynab account>
 ```
+
+## Upload a CSV to YNAB
+
+1. Steps 1, 4, 5 from above
+2. Pick a YNAB budget and account from `python3 list_budget.py`, and run:
+```
+    python3 csv2ynab.py <csv filename> <ynab budget> <ynab account>
+```
+
 
 ## What bunq2ynab does to read transactions from BUNQ
 
