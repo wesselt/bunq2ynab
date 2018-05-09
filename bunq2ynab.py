@@ -40,7 +40,7 @@ for p in payments:
 
     milliunits = str((1000 * Decimal(amount_value)).quantize(1))
     # For YNAB duplicate detection
-    occurrence = 1 + len([t for t in transactions 
+    occurrence = 1 + len([t for t in transactions
                           if t["amount"] == milliunits and t["date"] == date])
 
     transactions.append({
