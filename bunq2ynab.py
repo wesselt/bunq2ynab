@@ -53,7 +53,7 @@ for p in payments:
         "import_id": "YNAB:{0}:{1}:{2}".format(milliunits, date, occurrence)
     })
 
-# Occurance calculation is not accurate for oldest day in the list,
+# Occurrence calculation is not accurate for oldest day in the list,
 # so do not upload those transactions to YNAB
 safe_transactions = [t for t in transactions if first_day < t["date"]]
 
