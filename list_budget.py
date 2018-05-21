@@ -1,6 +1,17 @@
+import argparse
 from decimal import Decimal
 
 import ynab
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-v", action="store_true",
+    help="Show content of JSON messages")
+parser.add_argument("-vv", action="store_true",
+    help="Show JSON messages and HTTP headers")
+args = parser.parse_args()
+log_level = 2 if args.vv else 1 if args.v else 0
+ynab.set_log_level(log_level)
 
 
 def print_accounts(budget_id):

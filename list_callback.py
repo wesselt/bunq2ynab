@@ -1,6 +1,18 @@
-import bunq
+import argparse
 import json
 import sys
+
+import bunq
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-v", action="store_true",
+    help="Show content of JSON messages")
+parser.add_argument("-vv", action="store_true",
+    help="Show JSON messages and HTTP headers")
+args = parser.parse_args()
+log_level = 2 if args.vv else 1 if args.v else 0
+bunq.set_log_level(log_level)
 
 
 users = bunq.get("v1/user")
