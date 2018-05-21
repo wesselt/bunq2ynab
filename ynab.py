@@ -54,7 +54,7 @@ def log_reply(reply):
         for k, v in reply.headers.items():
             print("  {0}: {1}".format(k, v))
     print("----------")
-    if reply.headers["Content-Type"] == "application/json":
+    if reply.headers["Content-Type"].startswith("application/json"):
         print(json.dumps(reply.json(), indent=2))
     else:
         print(reply.text)
@@ -67,7 +67,7 @@ def call(action, method, data_obj=None):
         'Authorization': 'Bearer ' + get_personal_access_token(),
         'Content-type': 'application/json'
     }
-    log_request(action, method, headers, data)
+    log_request(action, method, headers, data_obj)
     if action == 'GET':
         reply = requests.get(url + method, headers=headers)
     elif action == 'POST':

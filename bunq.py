@@ -286,7 +286,7 @@ def call_requests(action, method, data_obj):
         'X-Bunq-Region': 'nl_NL'
     }
     sign(action, method, headers, data)
-    log_request(action, method, headers, data)
+    log_request(action, method, headers, data_obj)
     if action == "GET":
         reply = requests.get(url + method, headers=headers)
     elif action == "POST":

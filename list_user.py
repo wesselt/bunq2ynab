@@ -1,7 +1,18 @@
+import argparse
 from decimal import Decimal
 import sys
 
 import bunq
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-v", help="Show content of JSON messages",
+                    action="store_true")
+parser.add_argument("-vv", help="Show JSON messages and HTTP headers",
+                    action="store_true")
+args = parser.parse_args()
+log_level = 2 if args.vv else 1 if args.v else 0
+bunq.set_log_level(log_level)
 
 
 def print_accounts(userid):
