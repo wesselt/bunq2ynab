@@ -9,6 +9,10 @@ public_key.txt
 server_public.txt
 session_token.txt
 
+# YNAB status files
+ynab_clientid.txt
+ynab_clientsecret.txt
+
 # VIM swap file
 .*.swp
 
