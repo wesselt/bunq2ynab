@@ -10,6 +10,7 @@ public_ip_url = "http://ip.42.pl/raw"
 def get_ip():
     return requests.get(public_ip_url).text
 
+# https://stackoverflow.com/a/819420/50552
 def addressInNetwork(ip, net):
    "Is an address in a network"
    ipaddr = struct.unpack('<L', socket.inet_aton(ip))[0]
