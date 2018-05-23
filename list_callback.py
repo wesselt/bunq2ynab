@@ -20,7 +20,7 @@ def print_notification_filter(e):
     if not nfs:
         print("  No callbacks")
         return
-    for nf in e["notification_filters"]: 
+    for nf in nfs:
         print('  {0:35} {1:10} {2}'.format(
             nf["category"],
             nf["notification_delivery_method"],
