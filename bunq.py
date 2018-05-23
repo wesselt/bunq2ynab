@@ -6,11 +6,10 @@ import requests
 import socket
 import sys
 
+import get_ip
+
 
 url = "https://api.bunq.com/"
-
-# Endpoint to determine our public facing IP for device-server
-public_ip_url = "http://ip.42.pl/raw"
 
 # User-created file with the BUNQ API key
 api_token_file = "api_token.txt"
@@ -140,7 +139,7 @@ def get_server_public():
 
 
 def register_device():
-    ip = requests.get(public_ip_url).text
+    ip = getip.get_ip()
     print("Registering IP " + ip)
     method = "v1/device-server"
     data = {
@@ -171,30 +170,6 @@ def get_session_token():
         raise Exception("No token returned by session-server")
     write_file(session_token_file, session_token)
     return session_token
-
-
-# -----------------------------------------------------------------------------
-
-def get_user_id(user_name):
-    if user_name.isdigit():
-        return user_name
-
-    for u in get('v1/user'):
-        for k, v in u.items():
-            if v["display_name"].casefold() == user_name.casefold():
-                return str(v["id"])
-    raise Exception("BUNQ user '{0}' not found".format(user_name))
-
-
-def get_account_id(user_id, account_name):
-    if account_name.isdigit():
-        return account_name
-
-    reply = get('v1/user/' + user_id + '/monetary-account')
-    for a in [a["MonetaryAccountBank"] for a in reply]:
-        if a["description"].casefold() == account_name.casefold():
-            return str(a["id"])
-    raise Exception("BUNQ account '{0}' not found".format(account_name))
 
 
 # -----------------------------------------------------------------------------

@@ -2,7 +2,7 @@ import argparse
 import sys
 
 import bunq
-
+import bunq_api
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", action="store_true",
@@ -17,8 +17,8 @@ args = parser.parse_args()
 log_level = 2 if args.vv else 1 if args.v else 0
 bunq.set_log_level(log_level)
 
-bunq_user_id = bunq.get_user_id(args.bunq_user_name)
-bunq_account_id = bunq.get_account_id(bunq_user_id, args.bunq_account_name)
+bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
+bunq_account_id = bunq_api.get_account_id(bunq_user_id, args.bunq_account_name)
 
 method = ("v1/user/{0}/monetary-account/{1}/customer-statement?count=200"
           .format(bunq_user_id, bunq_account_id))

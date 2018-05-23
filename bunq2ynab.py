@@ -3,6 +3,7 @@ from decimal import Decimal
 import sys
 
 import bunq
+import bunq_api
 import ynab
 
 
@@ -26,8 +27,8 @@ ynab.set_log_level(log_level)
 
 
 print("Getting BUNQ identifiers...")
-bunq_user_id = bunq.get_user_id(args.bunq_user_name)
-bunq_account_id = bunq.get_account_id(bunq_user_id, args.bunq_account_name)
+bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
+bunq_account_id = bunq_api.get_account_id(bunq_user_id, args.bunq_account_name)
 
 print("Reading list of payments...")
 method = ("v1/user/{0}/monetary-account/{1}/payment?count=100"
