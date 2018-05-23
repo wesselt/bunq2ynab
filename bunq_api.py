@@ -11,12 +11,27 @@ def get_user_id(user_name):
 
 
 def get_account_id(user_id, account_name):
-    reply = bunq.get('v1/user/' + user_id + '/monetary-account')
+    reply = bunq.get('v1/user/' + user_id + '/monetary-account-bank')
     for a in [a["MonetaryAccountBank"] for a in reply]:
         if (a["description"].casefold() == account_name.casefold() or
                 str(a["id"]) == account_name):
             return str(a["id"])
     raise Exception("BUNQ account '{0}' not found".format(account_name))
+
+
+def get_callbacks(user_id, account_id):
+   method = 'v1/user/{0}/monetary-account/{1}'.format(user_id, account_id)
+   result = bunq.get(method)
+   return result[0]["MonetaryAccountBank"]["notification_filters"]
+
+
+def put_callbacks(user_id, account_id, new_notifications):
+    data = {
+         "notification_filters": new_notifications
+    }
+    method = 'v1/user/{0}/monetary-account-bank/{1}'.format(
+                                                           user_id, account_id)
+    bunq.put(method, data)
 
 
 def get_transactions(user_id, account_id):
