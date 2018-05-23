@@ -24,6 +24,14 @@ YNAB budget and account from `python3 list_budget.py`, and run:
     python3 bunq2ynab.py <bunq user> <bunq account> <ynab budget> <ynab account>
 ```
 
+## Subscribe to BUNQ push notifications
+
+1. Follow steps 1-5 above
+2. Run `auto_sync.py` to set up a callback and start listening for push notifications.  Make sure the port is open in the firewall, and if you're behind a router, that the port is properly forwarded:
+```
+    python3 auto_sync.py <bunq user> <bunq account> <ynab budget> <ynab account>
+```
+
 ## Upload a CSV to YNAB
 
 1. Steps 1, 4, 5 from above
