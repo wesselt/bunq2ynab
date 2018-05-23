@@ -51,4 +51,4 @@ for u in [u["UserPerson"] for u in users]:
         "notification_filters": new_notifications
     }
     method = "v1/user-person/{0}".format(bunq_user_id)
-    users = bunq.put(method, data)
+    bunq.put(method, data)
