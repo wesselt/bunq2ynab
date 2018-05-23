@@ -77,6 +77,10 @@ serversocket.bind(('0.0.0.0', args.port))
 serversocket.listen(5)
 while True:
     (clientsocket, address) = serversocket.accept()
-    print("Incoming call from {0}...".format(address[0]))
     clientsocket.close()
-    sync()
+    print("Incoming call from {0}...".format(address[0]))
+    bunq_network = "185.40.108.0/22"
+    if get_ip.addressInNetwork(address[0], bunq_network):
+        sync()
+    else:
+        print("Callback not in BUNQ {} range, ignoring...", bunq_network)
