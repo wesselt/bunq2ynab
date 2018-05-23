@@ -83,4 +83,4 @@ while True:
     if get_ip.addressInNetwork(address[0], bunq_network):
         sync()
     else:
-        print("Callback not in BUNQ {} range, ignoring...", bunq_network)
+        print("Not from BUNQ {} range, ignoring...".format(bunq_network))
