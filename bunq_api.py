@@ -17,3 +17,31 @@ def get_account_id(user_id, account_name):
                 str(a["id"]) == account_name):
             return str(a["id"])
     raise Exception("BUNQ account '{0}' not found".format(account_name))
+
+
+def get_transactions(user_id, account_id):
+    method = ("v1/user/{0}/monetary-account/{1}/payment?count=100"
+              .format(user_id, account_id))
+    payments = bunq.get(method)
+
+    print("Translating payments...")
+    transactions = []
+    first_day = None
+    unsorted_payments = [p["Payment"] for p in payments]
+    payments = sorted(unsorted_payments, key=lambda p: p["created"])
+    for p in payments:
+        if p["amount"]["currency"] != "EUR":
+            raise Exception("Non-euro payment: " + p["amount"]["currency"])
+        date = p["created"][:10]
+        if not first_day or date < first_day:
+            first_day = date
+
+        transactions.append({
+            "amount": p["amount"]["value"],
+            "date": date,
+            "payee": p["counterparty_alias"]["display_name"],
+            "description": p["description"]
+        })
+
+    # For correct duplicate calculation, return only complete days
+    return [t for t in transactions if first_day < t["date"]]

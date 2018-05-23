@@ -1,3 +1,4 @@
+from decimal import Decimal
 import json
 import os
 import requests
@@ -111,6 +112,29 @@ def get_account_id(budget_id, account_name):
             return a["id"]
     raise Exception("YNAB account '{0}' not found".format(account_name))
 
+
+def upload_transactions(budget_id, account_id, transactions):
+    ynab_transactions = []
+    for t in transactions:
+        milliunits = str((1000 * Decimal(t["amount"])).quantize(1))
+        # Calculate import_id for YNAB duplicate detection
+        occurrence = 1 + len([y for y in ynab_transactions
+                      if y["amount"] == milliunits and y["date"] == t["date"]])
+        ynab_transactions.append({
+            "account_id": account_id,
+            "date": t["date"],
+            "amount": milliunits,
+            "payee_name": t["payee"][:50],  # YNAB payee is max 50 chars
+            "memo": t["description"][:100],  # YNAB memo is max 100 chars
+            "cleared": "cleared",
+            "import_id": "YNAB:{}:{}:{}".format(
+                                             milliunits, t["date"], occurrence)
+        })
+
+    method = "v1/budgets/" + budget_id + "/transactions/bulk"
+    result = post(method, {"transactions": ynab_transactions})
+    return result["bulk"]
+    
 
 # -----------------------------------------------------------------------------
 
