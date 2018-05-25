@@ -6,7 +6,7 @@ import requests
 import socket
 import sys
 
-import get_ip
+import network
 
 
 url = "https://api.bunq.com/"
@@ -139,7 +139,7 @@ def get_server_public():
 
 
 def register_device():
-    ip = get_ip.get_ip()
+    ip = network.get_ip()
     print("Registering IP " + ip)
     method = "v1/device-server"
     data = {

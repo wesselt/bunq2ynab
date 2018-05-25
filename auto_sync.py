@@ -5,7 +5,7 @@ import subprocess
 
 import bunq_api
 import ynab
-import get_ip
+import network
 
 
 parser = argparse.ArgumentParser()
@@ -32,8 +32,8 @@ ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 
 
 def add_callback(port):
-    ip = get_ip.get_ip()
-    url = "https://{}:{}/bunq2ynab-autosync".format(get_ip.get_ip(), port)
+    network.openPort(port)
+    url = "https://{}:{}/bunq2ynab-autosync".format(network.get_ip(), port)
     print("Adding BUNQ callback to: {}".format(url))
     set_autosync_callbacks([{
         "category": "MUTATION",
@@ -43,6 +43,7 @@ def add_callback(port):
 
 
 def remove_callback():
+    network.closePort()
     set_autosync_callbacks([])
 
 
@@ -80,7 +81,7 @@ while True:
     clientsocket.close()
     print("Incoming call from {0}...".format(address[0]))
     bunq_network = "185.40.108.0/22"
-    if get_ip.addressInNetwork(address[0], bunq_network):
+    if network.addressInNetwork(address[0], bunq_network):
         sync()
     else:
         print("Not from BUNQ {} range, ignoring...".format(bunq_network))
