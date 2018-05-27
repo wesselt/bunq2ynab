@@ -17,12 +17,14 @@ bunq.set_log_level(log_level)
 
 def print_accounts(userid):
     method = 'v1/user/{0}/monetary-account'.format(userid)
-    for a in [a["MonetaryAccountBank"] for a in bunq.get(method)]:
-        print("  {0:28}  {1:10,} {2:3}  ({3})".format(
-            a["description"],
-            Decimal(a["balance"]["value"]),
-            a["balance"]["currency"],
-            a["id"]))
+    for a in bunq.get(method):
+        for k, v in a.items():
+            print("  {}".format(k))
+            print("  {0:28}  {1:10,} {2:3}  ({3})".format(
+                v["description"],
+                Decimal(v["balance"]["value"]),
+                v["balance"]["currency"],
+                v["id"]))
 
 
 users = bunq.get('v1/user')
