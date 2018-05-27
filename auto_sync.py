@@ -32,8 +32,10 @@ ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 
 
 def add_callback(port):
-    network.openPort(port)
-    url = "https://{}:{}/bunq2ynab-autosync".format(network.get_ip(), port)
+    public_ip = network.get_public_ip()
+    if public_ip != network.get_local_ip():
+        network.open_port(port)
+    url = "https://{}:{}/bunq2ynab-sync".format(public_ip, port)
     print("Adding BUNQ callback to: {}".format(url))
     set_autosync_callbacks([{
         "category": "MUTATION",
@@ -43,7 +45,7 @@ def add_callback(port):
 
 
 def remove_callback():
-    network.closePort()
+    network.close_port()
     set_autosync_callbacks([])
 
 
