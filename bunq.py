@@ -139,7 +139,7 @@ def get_server_public():
 
 
 def register_device():
-    ip = getip.get_ip()
+    ip = get_ip.get_ip()
     print("Registering IP " + ip)
     method = "v1/device-server"
     data = {
