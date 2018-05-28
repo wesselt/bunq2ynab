@@ -35,7 +35,7 @@ def add_callback(port):
     public_ip = network.get_public_ip()
     if public_ip != network.get_local_ip():
         network.open_port(port)
-    url = "https://{}:{}/bunq2ynab-sync".format(public_ip, port)
+    url = "https://{}:{}/bunq2ynab-autosync".format(public_ip, port)
     print("Adding BUNQ callback to: {}".format(url))
     set_autosync_callbacks([{
         "category": "MUTATION",
