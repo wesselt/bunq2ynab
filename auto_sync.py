@@ -70,7 +70,7 @@ def sync():
                                      transactions)
     print("Uploaded {0} new and {1} duplicate transactions.".format(
           len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
-    print("Finished sync at " + time.strftime(%X))
+    print("Finished sync at " + time.strftime("%X"))
     print("")
 
 
