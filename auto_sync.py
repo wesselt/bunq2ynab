@@ -2,6 +2,7 @@ import argparse
 import atexit
 import socket
 import subprocess
+import time
 
 import bunq_api
 import ynab
@@ -69,12 +70,15 @@ def sync():
                                      transactions)
     print("Uploaded {0} new and {1} duplicate transactions.".format(
           len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
+    print("Finished sync at " + time.strftime("%X"))
+    print("")
 
 
 add_callback(args.port)
 atexit.register(remove_callback)
 
 print("Listening on port {0}".format(args.port))
+print("")
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(('0.0.0.0', args.port))
 serversocket.listen(5)
