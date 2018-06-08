@@ -207,6 +207,7 @@ def verify(method, code, headers, data):
             return
     ciphertext = str(code) + "\n"
     for name in sorted(headers.keys()):
+        name = "-".join(map(str.capitalize, name.lower().split("-")))
         if name.startswith("X-Bunq-") and name != "X-Bunq-Server-Signature":
             ciphertext += name + ": " + headers[name] + "\n"
     ciphertext += "\n" + data
