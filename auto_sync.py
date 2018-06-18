@@ -88,6 +88,9 @@ while True:
     print("Incoming call from {0}...".format(address[0]))
     bunq_network = "185.40.108.0/22"
     if network.addressInNetwork(address[0], bunq_network):
-        sync()
+        try:
+            sync()
+        except Exception as e:
+            print("An error occured: {0}".format(e))
     else:
         print("Not from BUNQ {} range, ignoring...".format(bunq_network))
