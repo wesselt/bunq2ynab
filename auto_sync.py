@@ -1,5 +1,6 @@
 import argparse
 import atexit
+import errno
 import socket
 import subprocess
 import time
@@ -9,9 +10,13 @@ import ynab
 import network
 
 
+firstport = 44716
+lastport = 44971
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--port", default=44716, type=int,
-    help="TCP port number to listen to")
+parser.add_argument("--port", type=int,
+    help="TCP port number to listen to.  Default is to use the first free " +
+         "port in the {0}-{1} range.".format(firstport, lastport))
 parser.add_argument("bunq_user_name",
     help="Bunq user name (retrieve using 'python3 list_user.py')")
 parser.add_argument("bunq_account_name",
@@ -35,7 +40,7 @@ ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 def add_callback(port):
     public_ip = network.get_public_ip()
     if public_ip != network.get_local_ip():
-        network.open_port(port)
+        network.upnp_portforward(port)
     url = "https://{}:{}/bunq2ynab-autosync".format(public_ip, port)
     print("Adding BUNQ callback to: {}".format(url))
     set_autosync_callbacks([{
@@ -46,7 +51,7 @@ def add_callback(port):
 
 
 def remove_callback():
-    network.close_port()
+    network.upnp_cleanup()
     set_autosync_callbacks([])
 
 
@@ -74,13 +79,28 @@ def sync():
     print("")
 
 
-add_callback(args.port)
-atexit.register(remove_callback)
+def bind_port():
+    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if args.port:
+        serversocket.bind(('0.0.0.0', args.port))
+        return serversocket, args.port
+    for port in range(firstport, lastport+1):
+        try:
+            serversocket.bind(('0.0.0.0', port))
+            return serversocket, port
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                print("Port {0} is in use, trying next port...".format(port))
+                continue
+            raise
+    raise Exception("No free port found")
 
-print("Listening on port {0}".format(args.port))
-print("")
-serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.bind(('0.0.0.0', args.port))
+
+serversocket, port = bind_port()
+print("Registering callback for port {0}...".format(port))
+add_callback(port)
+atexit.register(remove_callback)
+print("Listening on port {0}...".format(port))
 serversocket.listen(5)
 while True:
     (clientsocket, address) = serversocket.accept()

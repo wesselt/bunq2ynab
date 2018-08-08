@@ -24,7 +24,7 @@ def get_local_ip():
 upnp = None
 mapped_port = None
 
-def open_port(port):
+def upnp_portforward(port):
     try:
         import miniupnpc
     except ImportError:
@@ -51,7 +51,7 @@ def open_port(port):
     mapped_port = port
 
 
-def close_port():
+def upnp_cleanup():
     if not mapped_port:
         return
     print("Removing port forwarding...")
