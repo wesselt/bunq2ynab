@@ -34,6 +34,8 @@ def upnp_portforward(port):
     print("Searching for upnp gateway...")
     try:
         upnp = miniupnpc.UPnP()
+        upnp.discoverdelay = 3
+        upnp.discover()
         upnp.selectigd()
     except Exception as e:
         print(e)
