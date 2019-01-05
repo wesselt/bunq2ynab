@@ -27,7 +27,8 @@ YNAB budget and account from `python3 list_budget.py`, and run:
 ## Subscribe to BUNQ push notifications
 
 1. Follow steps 1-5 above
-2. Run `auto_sync.py` to set up a callback and start listening for push notifications.  Make sure the port is open in the firewall, and if you're behind a router, that the port is properly forwarded:
+2. Optional: install [miniupnpc](http://miniupnp.free.fr/) to add a port forward to your router with universal plug and play. (For example with `pip3 install miniupnpc`.)
+3. Run `auto_sync.py` to set up a callback and start listening for push notifications.  Make sure the port is open in the firewall, and if you're behind a router, that the port is properly forwarded:
 ```
     python3 auto_sync.py <bunq user> <bunq account> <ynab budget> <ynab account>
 ```
