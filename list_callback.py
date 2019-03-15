@@ -34,6 +34,7 @@ for u in users:
         print_notification_filter(v)
 
         method = 'v1/user/{0}/monetary-account'.format(v["id"])
-        for a in [a["MonetaryAccountBank"] for a in bunq.get(method)]:
-            print('{} "{}" "{}":'.format(k, v["display_name"], a["description"]))
-            print_notification_filter(a)
+        for a in bunq.get(method):
+            for ac in a.values():
+                print('{} "{}" "{}":'.format(k, v["display_name"], ac["description"]))
+                print_notification_filter(ac)
