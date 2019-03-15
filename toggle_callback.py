@@ -51,11 +51,14 @@ bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
 if args.bunq_account_name:
     bunq_account_id = bunq_api.get_account_id(bunq_user_id,
                                               args.bunq_account_name)
-    method = "v1/user/{}/monetary-account//{}".format(
+    method = "v1/user/{}/monetary-account/{}".format(
                                                  bunq_user_id, bunq_account_id)
-    result = bunq.get(method)
-    old_nfs = result[0][bunq_account_type]["notification_filters"]
+    result = bunq.get(method)[0]
+    account_type = next(iter(result))
+    old_nfs = result[account_type]["notification_filters"]
     new_nfs = update_notifications(old_nfs)
+    method = "v1/user/{}/{}/{}".format(
+        bunq_user_id, bunq.get_path(account_type), bunq_account_id)
     bunq.put(method, {"notification_filters": new_nfs})
 else:
     method = "v1/user-person/{}".format(bunq_user_id)

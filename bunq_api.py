@@ -29,8 +29,9 @@ def get_account_id(user_id, account_name):
 
 def get_callbacks(user_id, account_id):
     method = 'v1/user/{0}/monetary-account/{1}'.format(user_id, account_id)
-    result = bunq.get(method)
-    return result[0][account_type]["notification_filters"]
+    result = bunq.get(method)[0]
+    account_type = next(iter(entry))
+    return result[account_type]["notification_filters"]
 
 
 def put_callbacks(user_id, account_id, new_notifications):

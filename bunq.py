@@ -23,6 +23,12 @@ session_token_file = "session_token.txt"
 # 1 to log http calls, 2 to include headers
 log_level = 0
 
+account_path = {
+    'MonetaryAccountJoint': 'monetary-account-joint',
+    'MonetaryAccountBank': 'monetary-account-bank',
+    'MonetaryAccountSavings': 'monetary-account-savings',
+}
+
 
 # -----------------------------------------------------------------------------
 
@@ -295,6 +301,10 @@ def call(action, method, data=None):
 
 
 # -----------------------------------------------------------------------------
+
+def get_path(account_type):
+    return account_path[account_type]
+
 
 def set_log_level(level):
     global log_level
