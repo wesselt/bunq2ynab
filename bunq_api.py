@@ -9,10 +9,14 @@ def get_user_id(user_name):
                 return str(v["id"])
     raise Exception("BUNQ user '{0}' not found".format(user_name))
 
+def get_account_type(user_id, account_name):
+    reply = bunq.get('v1/user/' + user_id + '/monetary-account/' + account_name)
+    return next(iter(reply[0].keys()))
 
 def get_account_id(user_id, account_name):
-    reply = bunq.get('v1/user/' + user_id + '/monetary-account-bank')
-    for a in [a["MonetaryAccountBank"] for a in reply]:
+    account_type = get_account_type(user_id, account_name)
+    reply = bunq.get('v1/user/' + user_id + '/' + bunq.get_account_path(account_type))
+    for a in [a[account_type] for a in reply]:
         if (a["description"].casefold() == account_name.casefold() or
                 str(a["id"]) == account_name):
             return str(a["id"])

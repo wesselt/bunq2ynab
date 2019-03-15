@@ -20,6 +20,13 @@ installation_token_file = "installation_token.txt"
 server_public_file = "server_public.txt"
 session_token_file = "session_token.txt"
 
+# Mapping of account type to REST path
+account_path = { 
+    'MonetaryAccountJoint' : 'monetary-account-joint', 
+    'MonetaryAccountBank' : 'monetary-account-bank', 
+    'MonetaryAccountSavings' : 'monetary-account-savings', 
+}
+
 # 1 to log http calls, 2 to include headers
 log_level = 0
 
@@ -69,6 +76,8 @@ def delete_old(fname, depends_on_fnames):
 
 
 # -----------------------------------------------------------------------------
+def get_account_path(account_type):
+    return account_path.get(account_type)
 
 def get_api_token():
     token = read_file(api_token_file)
