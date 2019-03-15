@@ -24,6 +24,7 @@ def get_local_ip():
 upnp = None
 mapped_port = None
 
+
 def upnp_portforward(port):
     try:
         import miniupnpc
@@ -42,7 +43,8 @@ def upnp_portforward(port):
         return
     print("Adding port forwarding...")
     try:
-        result = upnp.addportmapping(port, 'TCP', upnp.lanaddr, port, 'bynq2ynab-autosync', '')
+        result = upnp.addportmapping(port, 'TCP', upnp.lanaddr, port,
+                                     'bynq2ynab-autosync', '')
         if not result:
             print("Could not add port forwarding.")
             return

@@ -134,7 +134,7 @@ def upload_transactions(budget_id, account_id, transactions):
     method = "v1/budgets/" + budget_id + "/transactions/bulk"
     result = post(method, {"transactions": ynab_transactions})
     return result["bulk"]
-    
+
 
 # -----------------------------------------------------------------------------
 

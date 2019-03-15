@@ -58,12 +58,12 @@ def remove_callback():
 def set_autosync_callbacks(new_nfs):
     old_nfs = bunq_api.get_callbacks(bunq_user_id, bunq_account_id)
     for nf in old_nfs:
-       if (nf["category"] == "MUTATION" and
-              nf["notification_delivery_method"] == "URL" and
-              nf["notification_target"].endswith("/bunq2ynab-autosync")):
+        if (nf["category"] == "MUTATION" and
+                nf["notification_delivery_method"] == "URL" and
+                nf["notification_target"].endswith("/bunq2ynab-autosync")):
             print("Removing old callback...")
-       else:
-           new_nfs.append(nf)
+        else:
+            new_nfs.append(nf)
     bunq_api.put_callbacks(bunq_user_id, bunq_account_id, new_nfs)
 
 
