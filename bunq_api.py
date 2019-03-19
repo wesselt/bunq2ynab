@@ -52,6 +52,7 @@ def get_transactions(user_id, account_id):
     print("Translating payments...")
     transactions = []
     first_day = None
+    last_day = None
     unsorted_payments = [p["Payment"] for p in payments]
     payments = sorted(unsorted_payments, key=lambda p: p["created"])
     for p in payments:
@@ -60,6 +61,8 @@ def get_transactions(user_id, account_id):
         date = p["created"][:10]
         if not first_day or date < first_day:
             first_day = date
+        if not last_day or last_day < date:
+            last_day = date
 
         transactions.append({
             "amount": p["amount"]["value"],
@@ -69,4 +72,5 @@ def get_transactions(user_id, account_id):
         })
 
     # For correct duplicate calculation, return only complete days
-    return [t for t in transactions if first_day < t["date"]]
+    return [t for t in transactions 
+            if first_day < t["date"] or t["date"] == last_day]
