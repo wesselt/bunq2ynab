@@ -68,7 +68,7 @@ def get_transactions(user_id, account_id):
             "amount": p["amount"]["value"],
             "date": date,
             "payee": p["counterparty_alias"]["display_name"],
-            "description": p["description"]
+            "description": p["description"].strip()
         })
 
     # For correct duplicate calculation, return only complete days
