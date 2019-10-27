@@ -5,6 +5,7 @@ import socket
 import subprocess
 import time
 
+import bunq
 import bunq_api
 import ynab
 import network
@@ -14,6 +15,10 @@ firstport = 44716
 lastport = 44971
 
 parser = argparse.ArgumentParser()
+parser.add_argument("-v", action="store_true",
+    help="Show content of JSON messages")
+parser.add_argument("-vv", action="store_true",
+    help="Show JSON messages and HTTP headers")
 parser.add_argument("--port", type=int,
     help="TCP port number to listen to.  Default is to use the first free " +
          "port in the {0}-{1} range.".format(firstport, lastport))
@@ -26,6 +31,8 @@ parser.add_argument("ynab_budget_name",
 parser.add_argument("ynab_account_name",
     help="YNAB account name (retrieve using 'python3 list_budget.py')")
 args = parser.parse_args()
+log_level = 2 if args.vv else 1 if args.v else 0
+bunq.set_log_level(log_level)
 
 
 print("Getting BUNQ identifiers...")
@@ -45,7 +52,6 @@ def add_callback(port):
     print("Adding BUNQ callback to: {}".format(url))
     set_autosync_callbacks([{
         "category": "MUTATION",
-        "notification_delivery_method": "URL",
         "notification_target": url
     }])
 
@@ -57,25 +63,28 @@ def remove_callback():
 
 def set_autosync_callbacks(new_nfs):
     old_nfs = bunq_api.get_callbacks(bunq_user_id, bunq_account_id)
-    for nf in old_nfs:
-        if (nf["category"] == "MUTATION" and
-                nf["notification_delivery_method"] == "URL" and
-                nf["notification_target"].endswith("/bunq2ynab-autosync")):
-            print("Removing old callback...")
-        else:
-            new_nfs.append(nf)
+    for nfi in old_nfs:
+        for nf in nfi.values():
+            if (nf["category"] == "MUTATION" and
+                    nf["notification_target"].endswith("/bunq2ynab-autosync")):
+                print("Removing old callback...")
+            else:
+                new_nfs.append({
+                    "category": nf["category"],
+                    "notification_target": nf["notification_target"]
+                })
     bunq_api.put_callbacks(bunq_user_id, bunq_account_id, new_nfs)
 
 
 def sync():
-    print("Reading list of payments...")
+    print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} Reading list of payments...")
     transactions = bunq_api.get_transactions(bunq_user_id, bunq_account_id)
     print("Uploading transactions to YNAB...")
     stats = ynab.upload_transactions(ynab_budget_id, ynab_account_id,
                                      transactions)
     print("Uploaded {0} new and {1} duplicate transactions.".format(
           len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
-    print("Finished sync at " + time.strftime("%X"))
+    print(f"{time.strftime('%Y-%m-%d %H:%M:%S')} Finished sync")
     print("")
 
 
