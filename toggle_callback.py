@@ -27,21 +27,22 @@ bunq.set_log_level(log_level)
 def update_notifications(nfs):
     new_notifications = []
     removed_notification = False
-    for nf in nfs:
-        if (nf["notification_delivery_method"] == "URL" and
-                nf["category"] == args.toggle_category and
-                nf.get("notification_target", None) == args.toggle_url):
-            print("Removing callback...")
-            removed_notification = True
-        else:
-            # Preserve any other callback
-            new_notifications.append(nf)
+    for nfi in nfs:
+        for nf in nfi.values():
+            if (nf["category"] == args.toggle_category and
+                    nf.get("notification_target", None) == args.toggle_url):
+                print("Removing callback...")
+                removed_notification = True
+            else:
+                new_notifications.append({
+                    "category": nf["category"],
+                    "notification_target": nf["notification_target"]
+                })
 
     if not removed_notification:
         print("Adding callback...")
         new_notifications.append({
             "category": args.toggle_category,
-            "notification_delivery_method": "URL",
             "notification_target": args.toggle_url,
         })
     return new_notifications
@@ -51,18 +52,13 @@ bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
 if args.bunq_account_name:
     bunq_account_id = bunq_api.get_account_id(bunq_user_id,
                                               args.bunq_account_name)
-    method = "v1/user/{}/monetary-account/{}".format(
-                                                 bunq_user_id, bunq_account_id)
-    result = bunq.get(method)[0]
-    account_type = next(iter(result))
-    old_nfs = result[account_type]["notification_filters"]
+    method = (f"v1/user/{bunq_user_id}/monetary-account/"
+              f"{bunq_account_id}/notification-filter-url")
+    old_nfs = bunq.get(method)
     new_nfs = update_notifications(old_nfs)
-    method = "v1/user/{}/{}/{}".format(
-        bunq_user_id, bunq.get_path(account_type), bunq_account_id)
-    bunq.put(method, {"notification_filters": new_nfs})
+    bunq.post(method, {"notification_filters": new_nfs})
 else:
-    method = "v1/user-person/{}".format(bunq_user_id)
-    result = bunq.get(method)
-    old_nfs = result[0]["UserPerson"]["notification_filters"]
+    method = f"v1/user/{bunq_user_id}/notification-filter-url"
+    old_nfs = bunq.get(method)
     new_nfs = update_notifications(old_nfs)
-    bunq.put(method, {"notification_filters": new_nfs})
+    bunq.post(method, {"notification_filters": new_nfs})
