@@ -173,12 +173,8 @@ def sign(action, method, headers, data):
         headers['X-Bunq-Client-Authentication'] = get_installation_token()
     else:
         headers['X-Bunq-Client-Authentication'] = get_session_token()
-    ciphertext = action + " /" + method + "\n"
-    for name in sorted(headers.keys()):
-        ciphertext += name + ": " + headers[name] + "\n"
-    ciphertext += "\n" + data
     private_key = get_private_key()
-    sig = crypto.sign(private_key, ciphertext, 'sha256')
+    sig = crypto.sign(private_key, data, 'sha256')
     sig_str = base64.b64encode(sig).decode("utf-8")
     headers['X-Bunq-Client-Signature'] = sig_str
 
