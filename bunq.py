@@ -168,11 +168,12 @@ def sign(action, method, headers, data):
         return
     # device-server and session-server use the installation token
     # Other endpoints use a session token
-    if (method.startswith("v1/device-server") or
+    if not (method.startswith("v1/device-server") or
             method.startswith("v1/session-server")):
-        headers['X-Bunq-Client-Authentication'] = get_installation_token()
-    else:
         headers['X-Bunq-Client-Authentication'] = get_session_token()
+        return
+    headers['X-Bunq-Client-Authentication'] = get_installation_token()
+    # Device-server and session-server must be signed
     private_key = get_private_key()
     sig = crypto.sign(private_key, data, 'sha256')
     sig_str = base64.b64encode(sig).decode("utf-8")
