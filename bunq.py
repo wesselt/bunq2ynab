@@ -17,7 +17,6 @@ api_token_file = "api_token.txt"
 # Files that store BUNQ installation and session state
 private_key_file = "private_key.txt"
 installation_token_file = "installation_token.txt"
-server_public_file = "server_public.txt"
 session_token_file = "session_token.txt"
 
 # 1 to log http calls, 2 to include headers
@@ -116,32 +115,15 @@ def get_installation_token():
         "client_public_key": pem.decode("utf-8")
     }
     reply = post(method, data)
-    installation_token = server_public = None
+    installation_token = None
     for row in reply:
         if "Token" in row:
             installation_token = row["Token"]["token"]
-        elif "ServerPublicKey" in row:
-            server_public = row["ServerPublicKey"]["server_public_key"]
     if not installation_token:
         raise Exception("No token returned by installation")
-    if not server_public:
-        raise Exception("No server public key returned by installation")
     write_file(installation_token_file, installation_token)
-    write_file(server_public_file, server_public)
     register_device()
     return installation_token
-
-
-def get_server_public():
-    delete_old(server_public_file, [api_token_file, private_key_file,
-               installation_token_file])
-    pem_str = read_file(server_public_file)
-    if pem_str:
-        return crypto.load_publickey(crypto.FILETYPE_PEM, pem_str)
-    raise Exception(
-        "Server public key not found.  This should have been " +
-        "stored in " + server_public_file + " while storing the " +
-        "installation token.")
 
 
 def register_device():
@@ -158,7 +140,7 @@ def register_device():
 
 def get_session_token():
     delete_old(session_token_file, [api_token_file, private_key_file,
-               installation_token_file, server_public_file])
+               installation_token_file])
     token = read_file(session_token_file)
     if token:
         return token.rstrip("\r\n")
@@ -199,31 +181,6 @@ def sign(action, method, headers, data):
     sig = crypto.sign(private_key, ciphertext, 'sha256')
     sig_str = base64.b64encode(sig).decode("utf-8")
     headers['X-Bunq-Client-Signature'] = sig_str
-
-
-def verify(method, code, headers, data):
-    # Installation responses are not signed
-    if method.startswith("v1/installation"):
-        return
-    # Insufficient authentication errors are not signed
-    if headers["Content-Type"] == "application/json":
-        result = json.loads(data)
-        if ("Error" in result and result["Error"][0]["error_description"]
-                == "Insufficient authentication."):
-            return
-    ciphertext = str(code) + "\n"
-    for name in sorted(headers.keys()):
-        name = "-".join(map(str.capitalize, name.lower().split("-")))
-        if name.startswith("X-Bunq-") and name != "X-Bunq-Server-Signature":
-            ciphertext += name + ": " + headers[name] + "\n"
-    ciphertext += "\n" + data
-    server_public = get_server_public()
-    x509 = crypto.X509()
-    x509.set_pubkey(server_public)
-    sig_str = headers["X-Bunq-Server-Signature"]
-    sig = base64.b64decode(sig_str)
-    # Raises an exception when verification fails
-    crypto.verify(x509, sig, ciphertext, 'sha256')
 
 
 # -----------------------------------------------------------------------------
@@ -274,7 +231,6 @@ def call_requests(action, method, data_obj):
     elif action == "DELETE":
         reply = requests.delete(url + method, headers=headers)
     log_reply(reply)
-    verify(method, reply.status_code, reply.headers, reply.text)
     if reply.headers["Content-Type"] == "application/json":
         return reply.json()
     return reply.text
