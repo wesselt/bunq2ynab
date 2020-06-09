@@ -31,18 +31,18 @@ def print_notification_filter(nfs):
 
 bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
 
-method = f"v1/user/{bunq_user_id}/notification-filter-url"
+method = "v1/user/" + bunq_user_id + "/notification-filter-url"
 nfs = bunq.get(method)
 print("Callbacks for user:")
 print_notification_filter(nfs)
 
 # Loop over accounts for this user
-method = f"v1/user/{bunq_user_id}/monetary-account"
+method = "v1/user/" + bunq_user_id + "/monetary-account"
 for acs in bunq.get(method):
     for ac in acs.values():
         account_id = ac["id"]
-        print(f'Callbacks for account {account_id} "{ac["description"]}":')
-        method = (f"v1/user/{bunq_user_id}/monetary-account/{account_id}/" +
-                   "notification-filter-url")
+        print("Callbacks for account " + str(account_id) + " (" + ac["description"] + "):")
+        method = ("v1/user/" + str(bunq_user_id) + "/monetary-account/" + str(account_id) +
+                   "/notification-filter-url")
         nfs = bunq.get(method)
         print_notification_filter(nfs)
