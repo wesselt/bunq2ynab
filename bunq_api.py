@@ -28,8 +28,8 @@ def get_account_id(user_id, account_name):
 
 
 def get_callbacks(user_id, account_id):
-    method = (f"v1/user/{user_id}/monetary-account/{account_id}/" +
-               "notification-filter-url")
+    method = ("v1/user/" + user_id + "/monetary-account/" + account_id +
+              "/notification-filter-url")
     return bunq.get(method)
 
 
@@ -37,8 +37,8 @@ def put_callbacks(user_id, account_id, new_notifications):
     data = {
          "notification_filters": new_notifications
     }
-    method = (f"v1/user/{user_id}/monetary-account/{account_id}/" +
-               "notification-filter-url")
+    method = ("v1/user/" + user_id + "/monetary-account/" + account_id +
+              "/notification-filter-url")
     bunq.post(method, data)
 
 

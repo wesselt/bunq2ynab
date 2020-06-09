@@ -26,7 +26,7 @@ def dump(data):
 
 def collect_user_accounts(user_id):
     accounts = []
-    method = f"v1/user/{user_id}/monetary-account"
+    method = "v1/user/" + user_id + "/monetary-account"
     for e in bunq.get(method):
         account_type = next(iter(e))
         a = e[account_type]
@@ -63,11 +63,11 @@ def find_account(accounts, name):
 accounts = collect_accounts()
 source = find_account(accounts, args.source_name)
 if not source:
-    print(f"No account matches source {args.source_name}")
+    print("No account matches source " + args.source_name)
     sys.exit(1)
 target = find_account(accounts, args.target_name)
 if not target:
-    print(f"No account matches target {args.target_name}")
+    print("No account matches target " + args.target_name)
     sys.exit(1)
 
 if Decimal(source["value"]) <= 0:
@@ -75,10 +75,10 @@ if Decimal(source["value"]) <= 0:
     sys.exit(1)
 
 # Move balance to target account
-print(f"Sending {source['value']} {source['currency']} from " +
-      f"{source['iban']} to {target['iban']}...")
-method = (f"v1/user/{source['user_id']}/monetary-account/" +
-          f"{source['account_id']}/payment")
+print("Sending " + source['value'] + " " + source['currency'] + " from " +
+      source['iban'] + " to " + target['iban'] + "...")
+method = ("v1/user/" + source['user_id'] + "/monetary-account/" +
+          source['account_id'] + "/payment")
 data = {
     "amount": {
         "value": source["value"],
