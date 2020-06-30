@@ -2,7 +2,6 @@ import argparse
 import atexit
 import errno
 import socket
-import subprocess
 import time
 
 import bunq
