@@ -14,7 +14,7 @@ import network
 
 firstport = 44716
 lastport = 44971
-refresh_callback_seconds = 30
+refresh_callback_minutes = 120
 
 
 # ----- Parse command line arguments
@@ -129,7 +129,7 @@ atexit.register(atexit_cleanup)
 serversocket, port = bind_port()
 network.portmap_setup(port)
 print("Listening on port {0}...".format(port))
-serversocket.settimeout(5)  # seconds
+serversocket.settimeout(60)  # seconds
 serversocket.listen(5)  # max incoming calls queued
 
 
@@ -148,7 +148,7 @@ while True:
     print("Starting periodic synchronization...")
     sync()
 
-    next_refresh = time.time() + refresh_callback_seconds
+    next_refresh = time.time() + refresh_callback_minutes*60
     while time.time() < next_refresh:
         try:
             (clientsocket, address) = serversocket.accept()
