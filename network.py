@@ -3,16 +3,12 @@ import requests
 import socket
 
 
-# Endpoint to determine our public facing IP for device-server
-public_ip_url = "http://ip.42.pl/raw"
+# Bunq server address range
+bunq_network = "185.40.108.0/22"
 
 
-def get_public_ip():
-    return requests.get(public_ip_url).text
-
-
-def addressInNetwork(ip, net_n_bits):
-    return ipaddress.ip_address(ip) in ipaddress.ip_network(net_n_bits)
+def is_bunq_server(ip):
+    return ipaddress.ip_address(ip) in ipaddress.ip_network(bunq_network)
 
 
 def get_local_ip():
@@ -22,46 +18,66 @@ def get_local_ip():
 
 
 upnp = None
-mapped_port = None
+local_port = None
+public_port = None
 
 
-def upnp_portforward(port):
+def portmap_setup(port):
+    global upnp, local_port
+    local_port = port
     try:
         import miniupnpc
-    except ImportError:
-        print("Could not load miniupnpc module. Skipping upnp forward.")
-        return
-    global upnp
-    print("Searching for upnp gateway...")
-    try:
         upnp = miniupnpc.UPnP()
         upnp.discoverdelay = 3
+    except ImportError:
+        print("Could not load miniupnpc module. Skipping upnp port mapping.")
+
+
+def portmap_search():
+    if not upnp:
+        return
+    print("Searching for upnp gateway...")
+    try:
         upnp.discover()
         upnp.selectigd()
     except Exception as e:
-        print(e)
-        return
-    print("Adding port forwarding...")
-    try:
-        result = upnp.addportmapping(port, 'TCP', upnp.lanaddr, port,
-                                     'bynq2ynab-autosync', '')
-        if not result:
-            print("Could not add port forwarding.")
-            return
-    except Exception as e:
-        print(e)
-        return
-    global mapped_port
-    mapped_port = port
+        print("Error searching for upnp gateway: {0}".format(e))
 
 
-def upnp_cleanup():
-    if not mapped_port:
+def portmap_public_ip():
+    if not upnp:
+        return None
+    return upnp.externalipaddress()
+
+
+def portmap_add():
+    if not upnp:
         return
-    print("Removing port forwarding...")
+    print("Adding upnp port mapping...")
+    global public_port
+    for try_port in range(local_port, local_port+128):
+        try:
+            upnp.addportmapping(try_port, 'TCP', upnp.lanaddr, local_port,
+                                'bynq2ynab-autosync', '')
+            public_port = try_port
+            return public_port
+        except Exception as e:
+            if "ConflictInMappingEntry" not in str(e):
+                raise e
+            print("Port {} is already mapped, trying next port..."
+                  .format(try_port))
+
+
+def portmap_remove():
+    global public_port
+    if not upnp or not public_port:
+        return
+    print("Removing upnp port mapping...")
     try:
-        result = upnp.deleteportmapping(mapped_port, 'TCP')
+        result = upnp.deleteportmapping(public_port, 'TCP')
         if not result:
-            print("Failed to remove upnp port forwarding.")
+            print("Failed to remove upnp port mapping.")
     except Exception as e:
-        print(e)
+        print("Error removing upnp port mapping: {0}".format(e))
+    finally:
+        public_port = None
