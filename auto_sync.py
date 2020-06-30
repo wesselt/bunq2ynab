@@ -14,7 +14,7 @@ import network
 
 firstport = 44716
 lastport = 44971
-bunq_network = "185.40.108.0/22"
+refresh_callback_seconds = 30
 
 
 # ----- Parse command line arguments
@@ -51,10 +51,7 @@ ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 
 # ----- Adding a callback to the bunq account
 
-def add_callback(port):
-    public_ip = network.get_public_ip()
-    if public_ip != network.get_local_ip():
-        network.upnp_portforward(port)
+def add_callback(public_ip, port):
     url = "https://{}:{}/bunq2ynab-autosync".format(public_ip, port)
     print("Adding BUNQ callback to: {}".format(url))
     set_autosync_callbacks([{
@@ -64,7 +61,6 @@ def add_callback(port):
 
 
 def remove_callback():
-    network.upnp_cleanup()
     set_autosync_callbacks([])
 
 
@@ -86,15 +82,18 @@ def set_autosync_callbacks(new_nfs):
 # ----- Synchronize with YNAB
 
 def sync():
-    print(time.strftime('%Y-%m-%d %H:%M:%S') + " Reading list of payments...")
-    transactions = bunq_api.get_transactions(bunq_user_id, bunq_account_id)
-    print("Uploading transactions to YNAB...")
-    stats = ynab.upload_transactions(ynab_budget_id, ynab_account_id,
-                                     transactions)
-    print("Uploaded {0} new and {1} duplicate transactions.".format(
-          len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
-    print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")
-    print("")
+    try:
+        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Reading list of payments...")
+        transactions = bunq_api.get_transactions(bunq_user_id, bunq_account_id)
+        print("Uploading transactions to YNAB...")
+        stats = ynab.upload_transactions(ynab_budget_id, ynab_account_id,
+                                         transactions)
+        print("Uploaded {0} new and {1} duplicate transactions.".format(
+              len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
+        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")
+        print("")
+    except Exception as e:
+        print("Error during synching: {}".format(e))
 
 
 # ----- Listen for bunq calls and run scheduled jobs
@@ -116,20 +115,52 @@ def bind_port():
     raise Exception("No free port found")
 
 
+# ----- Cleanup
+
+def atexit_cleanup():
+    print("Cleaning up...")
+    remove_callback()
+    network.portmap_remove()
+
+
+# ----- Setup
+
+atexit.register(atexit_cleanup)
 serversocket, port = bind_port()
-print("Registering callback for port {0}...".format(port))
-add_callback(port)
-atexit.register(remove_callback)
+network.portmap_setup(port)
 print("Listening on port {0}...".format(port))
-serversocket.listen(5)
+serversocket.settimeout(5)  # seconds
+serversocket.listen(5)  # max incoming calls queued
+
+
+# ----- Main loop
 while True:
-    (clientsocket, address) = serversocket.accept()
-    clientsocket.close()
-    print("Incoming call from {0}...".format(address[0]))
-    if network.addressInNetwork(address[0], bunq_network):
+    network.portmap_search()
+    ip = network.portmap_public_ip()
+    if ip:
+        public_port = network.portmap_add()
+    if not public_port:
+        public_port = port
+        ip = network.get_local_ip()
+    print("Registering callback for port {}:{}...".format(ip, public_port))
+    add_callback(ip, public_port)
+
+    print("Starting periodic synchronization...")
+    sync()
+
+    next_refresh = time.time() + refresh_callback_seconds
+    while time.time() < next_refresh:
         try:
-            sync()
-        except Exception as e:
-            print("An error occured: {0}".format(e))
-    else:
-        print("Not from BUNQ {} range, ignoring...".format(bunq_network))
+            (clientsocket, address) = serversocket.accept()
+            clientsocket.close()
+            print("Incoming call from {}...".format(address[0]))
+            if not network.is_bunq_server(address[0]):
+                print("Source IP not in BUNQ range {}".format(bunq_network))
+            else:
+                sync()
+        except socket.timeout as e:
+            pass
+
+    print("Periodically refreshing callback setup...")
+    remove_callback()
+    network.portmap_remove()
