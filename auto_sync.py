@@ -137,10 +137,10 @@ serversocket.listen(5)  # max incoming calls queued
 while True:
     network.portmap_search()
     ip = network.portmap_public_ip()
+    public_port = port
     if ip:
         public_port = network.portmap_add()
     if not public_port:
-        public_port = port
         ip = network.get_local_ip()
     print("Registering callback for port {}:{}...".format(ip, public_port))
     add_callback(ip, public_port)
