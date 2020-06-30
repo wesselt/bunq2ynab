@@ -10,8 +10,14 @@ import ynab
 import network
 
 
+# ----- Parameters
+
 firstport = 44716
 lastport = 44971
+bunq_network = "185.40.108.0/22"
+
+
+# ----- Parse command line arguments
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-v", action="store_true",
@@ -42,6 +48,8 @@ print("Getting YNAB identifiers...")
 ynab_budget_id = ynab.get_budget_id(args.ynab_budget_name)
 ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 
+
+# ----- Adding a callback to the bunq account
 
 def add_callback(port):
     public_ip = network.get_public_ip()
@@ -75,6 +83,8 @@ def set_autosync_callbacks(new_nfs):
     bunq_api.put_callbacks(bunq_user_id, bunq_account_id, new_nfs)
 
 
+# ----- Synchronize with YNAB
+
 def sync():
     print(time.strftime('%Y-%m-%d %H:%M:%S') + " Reading list of payments...")
     transactions = bunq_api.get_transactions(bunq_user_id, bunq_account_id)
@@ -86,6 +96,8 @@ def sync():
     print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")
     print("")
 
+
+# ----- Listen for bunq calls and run scheduled jobs
 
 def bind_port():
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -114,7 +126,6 @@ while True:
     (clientsocket, address) = serversocket.accept()
     clientsocket.close()
     print("Incoming call from {0}...".format(address[0]))
-    bunq_network = "185.40.108.0/22"
     if network.addressInNetwork(address[0], bunq_network):
         try:
             sync()
