@@ -3,8 +3,21 @@ import requests
 import socket
 
 
+# Endpoint to determine our public facing IP for device-server
+public_ip_url = "http://ip.42.pl/raw"
 # Bunq server address range
 bunq_network = "185.40.108.0/22"
+
+
+# Can't change public IP, it's also saved in the IP limits on the API key
+public_ip = None
+
+
+def get_public_ip():
+    global public_ip
+    if not public_ip:
+        public_ip = requests.get(public_ip_url).text
+    return public_ip
 
 
 def is_bunq_server(ip):
@@ -23,6 +36,10 @@ public_port = None
 
 
 def portmap_setup(port):
+    # Don't try to map ports if we have a public IP
+    if get_public_ip() == get_local_ip():
+        print("Host has a public IP, not trying upnp port mapping.")
+        return
     global upnp, local_port
     local_port = port
     try:
@@ -47,7 +64,10 @@ def portmap_search():
 def portmap_public_ip():
     if not upnp:
         return None
-    return upnp.externalipaddress()
+    try:
+        return upnp.externalipaddress()
+    except:
+        return None
 
 
 def portmap_add():
