@@ -1,4 +1,5 @@
 import argparse
+import atexit
 import errno
 import socket
 import time
@@ -38,14 +39,8 @@ args = parser.parse_args()
 log_level = 2 if args.vv else 1 if args.v else 0
 bunq.set_log_level(log_level)
 
-
-print("Getting BUNQ identifiers...")
-bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
-bunq_account_id = bunq_api.get_account_id(bunq_user_id, args.bunq_account_name)
-
-print("Getting YNAB identifiers...")
-ynab_budget_id = ynab.get_budget_id(args.ynab_budget_name)
-ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
+bunq_user_id = None
+serversocket = None
 
 
 # ----- Adding a callback to the bunq account
@@ -114,18 +109,29 @@ def bind_port():
     raise Exception("No free port found")
 
 
-# ----- Setup
-
-serversocket, port = bind_port()
-network.portmap_setup(port)
-print("Listening on port {0}...".format(port))
-serversocket.settimeout(60)  # seconds
-serversocket.listen(5)  # max incoming calls queued
-
-
 # ----- Setup callback, wait for callback, teardown
 
 def setup_callback():
+    global bunq_user_id, bunq_account_id, ynab_budget_id, ynab_account_id
+    global serversocket
+
+    if not bunq_user_id:
+        print("Getting BUNQ identifiers...")
+        bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
+        bunq_account_id = bunq_api.get_account_id(bunq_user_id,
+                                                  args.bunq_account_name)
+        print("Getting YNAB identifiers...")
+        ynab_budget_id = ynab.get_budget_id(args.ynab_budget_name)
+        ynab_account_id = ynab.get_account_id(ynab_budget_id,
+                                               args.ynab_account_name)
+
+    if not serversocket:
+        serversocket, port = bind_port()
+        serversocket.settimeout(60)  # operations timeout after 60 seconds
+        print("Listening on port {0}...".format(port))
+        serversocket.listen(5)  # max incoming calls queued
+        network.portmap_setup(port)
+
     network.portmap_search()
     public_port = None
     ip = network.portmap_public_ip()
@@ -165,18 +171,19 @@ def teardown_callback():
 
 
 # ----- Main loop
+#atexit.register(teardown_callback)
 while True:
     try:
         setup_callback()
 
         print("Starting periodic synchronization...")
         sync()
-   
+
         next_refresh = time.time() + refresh_callback_minutes*60
         wait_for_callback(next_refresh)
-
     except Exception as e:
         print("Error: {}".format(e))
+        print(e)
         print("Error occured, waiting 10 seconds.")
         time.sleep(10)
     finally:
