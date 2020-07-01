@@ -1,5 +1,4 @@
 import argparse
-import atexit
 import errno
 import socket
 import time
@@ -115,17 +114,8 @@ def bind_port():
     raise Exception("No free port found")
 
 
-# ----- Cleanup
-
-def atexit_cleanup():
-    print("Cleaning up...")
-    remove_callback()
-    network.portmap_remove()
-
-
 # ----- Setup
 
-atexit.register(atexit_cleanup)
 serversocket, port = bind_port()
 network.portmap_setup(port)
 print("Listening on port {0}...".format(port))
@@ -133,11 +123,12 @@ serversocket.settimeout(60)  # seconds
 serversocket.listen(5)  # max incoming calls queued
 
 
-# ----- Main loop
-while True:
+# ----- Setup callback, wait for callback, teardown
+
+def setup_callback():
     network.portmap_search()
-    ip = network.portmap_public_ip()
     public_port = None
+    ip = network.portmap_public_ip()
     if ip:
         public_port = network.portmap_add()
     if not public_port:
@@ -146,10 +137,8 @@ while True:
     print("Registering callback for port {}:{}...".format(ip, public_port))
     add_callback(ip, public_port)
 
-    print("Starting periodic synchronization...")
-    sync()
 
-    next_refresh = time.time() + refresh_callback_minutes*60
+def wait_for_callback(next_refresh):
     while time.time() < next_refresh:
         try:
             (clientsocket, address) = serversocket.accept()
@@ -162,6 +151,33 @@ while True:
         except socket.timeout as e:
             pass
 
-    print("Periodically refreshing callback setup...")
-    remove_callback()
-    network.portmap_remove()
+
+def teardown_callback():
+    print("Cleaning up...")
+    try:
+        remove_callback()
+    except Exception as e:
+        print("Error removing callback: {}".format(e))
+    try:
+        network.portmap_remove()
+    except Exception as e:
+        print("Error removing upnp port mapping: {}".format(e))
+
+
+# ----- Main loop
+while True:
+    try:
+        setup_callback()
+
+        print("Starting periodic synchronization...")
+        sync()
+   
+        next_refresh = time.time() + refresh_callback_minutes*60
+        wait_for_callback(next_refresh)
+
+    except Exception as e:
+        print("Error: {}".format(e))
+        print("Error occured, waiting 10 seconds.")
+        time.sleep(10)
+    finally:
+        teardown_callback()
