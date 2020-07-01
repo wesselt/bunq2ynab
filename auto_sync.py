@@ -1,5 +1,4 @@
 import argparse
-import atexit
 import errno
 import socket
 import time
@@ -171,7 +170,6 @@ def teardown_callback():
 
 
 # ----- Main loop
-#atexit.register(teardown_callback)
 while True:
     try:
         setup_callback()
