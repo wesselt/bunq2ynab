@@ -13,7 +13,7 @@ import network
 
 firstport = 44716
 lastport = 44971
-refresh_callback_minutes = 120
+refresh_callback_minutes = 240
 
 
 # ----- Parse command line arguments
@@ -126,7 +126,6 @@ def setup_callback():
 
     if not serversocket:
         serversocket, port = bind_port()
-        serversocket.settimeout(60)  # operations timeout after 60 seconds
         print("Listening on port {0}...".format(port))
         serversocket.listen(5)  # max incoming calls queued
         network.portmap_setup(port)
@@ -143,9 +142,14 @@ def setup_callback():
     add_callback(ip, public_port)
 
 
-def wait_for_callback(next_refresh):
-    while time.time() < next_refresh:
+def wait_for_callback():
+    next_refresh = time.time() + refresh_callback_minutes*60
+    while True:
+        time_left = next_refresh - time.time()
+        if time_left < 1:
+            return
         try:
+            serversocket.settimeout(time_left)
             (clientsocket, address) = serversocket.accept()
             clientsocket.close()
             print("Incoming call from {}...".format(address[0]))
@@ -154,7 +158,7 @@ def wait_for_callback(next_refresh):
             else:
                 sync()
         except socket.timeout as e:
-            pass
+            return
 
 
 def teardown_callback():
@@ -177,8 +181,7 @@ while True:
         print("Starting periodic synchronization...")
         sync()
 
-        next_refresh = time.time() + refresh_callback_minutes*60
-        wait_for_callback(next_refresh)
+        wait_for_callback()
     except Exception as e:
         print("Error: {}".format(e))
         print(e)
