@@ -54,8 +54,6 @@ def get_transactions(user_id, account_id):
     unsorted_payments = [p["Payment"] for p in payments]
     payments = sorted(unsorted_payments, key=lambda p: p["created"])
     for p in payments:
-        if p["amount"]["currency"] != "EUR":
-            raise Exception("Non-euro payment: " + p["amount"]["currency"])
         date = p["created"][:10]
         if not first_day or date < first_day:
             first_day = date
