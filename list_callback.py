@@ -2,8 +2,8 @@ import argparse
 import json
 import sys
 
-import bunq
-import bunq_api
+from lib import bunq
+from lib import bunq_api
 
 
 parser = argparse.ArgumentParser()

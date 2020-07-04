@@ -3,10 +3,10 @@ import errno
 import socket
 import time
 
-import bunq
-import bunq_api
-import ynab
-import network
+from lib import bunq
+from lib import bunq_api
+from lib import ynab
+from lib import network
 
 
 # ----- Parameters

@@ -3,6 +3,7 @@ import json
 import os
 import requests
 import uuid
+import sys
 
 
 url = 'https://api.youneedabudget.com/'
@@ -15,7 +16,8 @@ log_level = 0
 # -----------------------------------------------------------------------------
 
 def read_file(fname):
-    fn = os.path.join(os.path.dirname(__file__), fname)
+    dname = os.path.dirname(sys.argv[0])
+    fn = os.path.join(dname, fname)
     if os.path.isfile(fn):
         with open(fn, 'r') as f:
             return f.read()

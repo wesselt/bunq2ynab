@@ -6,7 +6,7 @@ import requests
 import socket
 import sys
 
-import network
+from lib import network
 
 
 url = "https://api.bunq.com/"
@@ -32,7 +32,8 @@ account_path = {
 # -----------------------------------------------------------------------------
 
 def fname_to_path(fname):
-    return os.path.join(os.path.dirname(__file__), fname)
+    dname = os.path.dirname(sys.argv[0])
+    return os.path.join(dname, fname)
 
 
 def read_file(fname):

@@ -1,7 +1,7 @@
 import argparse
 from decimal import Decimal
 
-import ynab
+from lib import ynab
 
 
 parser = argparse.ArgumentParser()

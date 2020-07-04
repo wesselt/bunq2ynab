@@ -3,7 +3,7 @@ import csv
 from decimal import Decimal
 import sys
 
-import ynab
+from lib import ynab
 
 
 parser = argparse.ArgumentParser()
