@@ -1,4 +1,4 @@
-import bunq
+from lib import bunq
 
 
 def get_user_id(user_name):

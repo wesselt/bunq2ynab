@@ -2,7 +2,7 @@ import argparse
 from decimal import Decimal
 import sys
 
-import bunq
+from lib import bunq
 
 
 parser = argparse.ArgumentParser()

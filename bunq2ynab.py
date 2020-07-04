@@ -1,9 +1,9 @@
 import argparse
 import sys
 
-import bunq
-import bunq_api
-import ynab
+from lib import bunq
+from lib import bunq_api
+from lib import ynab
 
 
 parser = argparse.ArgumentParser()

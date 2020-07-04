@@ -3,7 +3,7 @@ from decimal import Decimal
 import json
 import sys
 
-import bunq
+import lib/bunq
 
 
 parser = argparse.ArgumentParser()
