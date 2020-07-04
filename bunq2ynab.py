@@ -16,7 +16,7 @@ parser.add_argument("bunq_user_name",
 parser.add_argument("bunq_account_name",
     help="Bunq account name (retrieve using 'python3 list_user.py')")
 parser.add_argument("ynab_budget_name",
-    help="YNAB user name (retrieve using 'python3 list_budget.py')")
+    help="YNAB budget name (retrieve using 'python3 list_budget.py')")
 parser.add_argument("ynab_account_name",
     help="YNAB account name (retrieve using 'python3 list_budget.py')")
 args = parser.parse_args()
