@@ -181,6 +181,8 @@ def wait_for_callback():
         if time_left < 1:
             return
         try:
+            print("Waiting for callback for {} minutes...".format(
+                  int(time_left/60)))
             serversocket.settimeout(time_left)
             (clientsocket, address) = serversocket.accept()
             clientsocket.close()
@@ -215,8 +217,6 @@ try:
             sync()
 
             if callback_ip and callback_port:
-                print("Waiting for callback for {} minutes...".format(
-                    refresh_callback_minutes))
                 wait_for_callback()
             else:
                 print("No callback, waiting for {} minutes...".format(
