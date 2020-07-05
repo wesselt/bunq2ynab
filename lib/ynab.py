@@ -172,7 +172,7 @@ def get_category(p, ynab):
     return ynab[import_id]["category_id"]
 
 
-def merge_zerofx(budget_id, account_id, payments):
+def get_ynab_transactions(budget_id, account_id, payments):
     # Retrieve current YNAB transactions
     first_date = payments[0]["date"]
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
@@ -180,8 +180,14 @@ def merge_zerofx(budget_id, account_id, payments):
     ynab = {}
     for yt in result["transactions"]:
         ynab[yt["import_id"]] = yt
+    print("Retrieved {0} YNAB transactions.".format(len(ynab)))
+    return ynab
 
+
+def merge_zerofx(budget_id, account_id, payments):
     # Search for payment, reversal, payment triple
+    print("Merging ZeroFX corrections...")
+    ynab = {}
     for i in range(0, len(payments)):
         reversal = payments[i]
         if reversal["sub_type"].upper() == "REVERSAL":
@@ -191,6 +197,8 @@ def merge_zerofx(budget_id, account_id, payments):
             correction = find_corrected(payments, i)
             if not correction:
                 continue
+            if not ynab:
+                ynab = get_ynab_transactions(budget_id, account_id, payments)
             original_cat = get_category(original, ynab)
             if not original_cat:
                 continue
