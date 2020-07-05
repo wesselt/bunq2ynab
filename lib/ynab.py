@@ -1,3 +1,4 @@
+import datetime
 from decimal import Decimal
 import json
 import os
@@ -115,26 +116,121 @@ def get_account_id(budget_id, account_name):
     raise Exception("YNAB account '{0}' not found".format(account_name))
 
 
-def upload_transactions(budget_id, account_id, transactions):
-    ynab_transactions = []
-    for t in transactions:
-        milliunits = str((1000 * Decimal(t["amount"])).quantize(1))
+# -----------------------------------------------------------------------------
+
+def strip_descr(descr):
+    if not "," in descr:
+        return descr
+    return ",".join(descr.split(",")[:-1])
+
+
+def date_subtract(dt_str, days):
+    dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
+    dt = dt - datetime.timedelta(days=days)
+    return dt.strftime("%Y-%m-%d")
+
+
+def find_original(payments, i):
+    a = payments[i]
+    min_date = date_subtract(a["date"], 4)
+    while True:
+        i = i - 1
+        if i < 0:
+            return None
+        b = payments[i]
+        if b["date"] < min_date:
+            return None
+        if (b["sub_type"].upper() != "PAYMENT" or
+            Decimal(b["amount"]) != -Decimal(a["amount"]) or
+            b["payee"] != a["payee"] or
+            "Refund: " + b["description"] != a["description"]):
+            continue
+        return b
+
+
+def find_corrected(payments, i):
+    a = payments[i]
+    a_descr = strip_descr(a["description"])
+    while True:
+        i = i + 1
+        if i == len(payments):
+            return None
+        b = payments[i]
+        if b["date"] != a["date"]:
+            return None
+        if (b["sub_type"].upper() != "PAYMENT" or
+            b["payee"] != a["payee"] or
+            a_descr != "Refund: " + strip_descr(b["description"])):
+            continue
+        return b
+
+
+def get_category(p, ynab):
+    import_id = p["transaction"]["import_id"]
+    if import_id not in ynab:
+        return None
+    return ynab[import_id]["category_id"]
+
+
+def merge_zerofx(budget_id, account_id, payments):
+    # Retrieve current YNAB transactions
+    first_date = payments[0]["date"]
+    result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
+        .format(budget_id, account_id, first_date))
+    ynab = {}
+    for yt in result["transactions"]:
+        ynab[yt["import_id"]] = yt
+
+    # Search for payment, reversal, payment triple
+    for i in range(0, len(payments)):
+        reversal = payments[i]
+        if reversal["sub_type"].upper() == "REVERSAL":
+            original = find_original(payments, i)
+            if not original:
+                continue
+            correction = find_corrected(payments, i)
+            if not correction:
+                continue
+            original_cat = get_category(original, ynab)
+            if not original_cat:
+                continue
+            reversal_cat = get_category(reversal, ynab)
+            if not reversal_cat:
+                print("Categorizing zerofx reversal...")
+                reversal["transaction"]["category_id"] = original_cat
+            correction_cat = get_category(correction, ynab)
+            if not correction_cat:
+                print("Categorizing zerofx correction...")
+                correction["transaction"]["category_id"] = original_cat
+
+
+# -----------------------------------------------------------------------------
+
+def upload_payments(budget_id, account_id, payments):
+    if len(payments) == 0:
+        return
+    transactions = []
+    for p in payments:
+        milliunits = str((1000 * Decimal(p["amount"])).quantize(1))
         # Calculate import_id for YNAB duplicate detection
-        occurrence = 1 + len([y for y in ynab_transactions
-                      if y["amount"] == milliunits and y["date"] == t["date"]])
-        ynab_transactions.append({
+        occurrence = 1 + len([y for y in transactions
+                      if y["amount"] == milliunits and y["date"] == p["date"]])
+        p["transaction"] = {
             "account_id": account_id,
-            "date": t["date"],
+            "date": p["date"],
             "amount": milliunits,
-            "payee_name": t["payee"][:50],  # YNAB payee is max 50 chars
-            "memo": t["description"][:100],  # YNAB memo is max 100 chars
+            "payee_name": p["payee"][:50],  # YNAB payee is max 50 chars
+            "memo": p["description"][:100],  # YNAB memo is max 100 chars
             "cleared": "cleared",
             "import_id": "YNAB:{}:{}:{}".format(
-                                             milliunits, t["date"], occurrence)
-        })
+                                             milliunits, p["date"], occurrence)
+        }
+
+    merge_zerofx(budget_id, account_id, payments)
 
     method = "v1/budgets/" + budget_id + "/transactions/bulk"
-    result = post(method, {"transactions": ynab_transactions})
+    result = post(method, {"transactions":
+                           [p["transaction"] for p in payments]})
     return result["bulk"]
 
 

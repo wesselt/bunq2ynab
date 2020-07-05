@@ -42,27 +42,30 @@ def put_callbacks(user_id, account_id, new_notifications):
     bunq.post(method, data)
 
 
-def get_transactions(user_id, account_id):
+def get_payments(user_id, account_id):
     method = ("v1/user/{0}/monetary-account/{1}/payment?count=100"
               .format(user_id, account_id))
-    payments = bunq.get(method)
+    payment_list = bunq.get(method)
 
     print("Translating payments...")
-    transactions = []
     first_day = None
-    unsorted_payments = [p["Payment"] for p in payments]
-    payments = sorted(unsorted_payments, key=lambda p: p["created"])
-    for p in payments:
+    unsorted_payments = [p["Payment"] for p in payment_list]
+    sorted_payments = sorted(unsorted_payments, key=lambda p: p["created"])
+    payments = []
+    for p in sorted_payments:
         date = p["created"][:10]
         if not first_day:
             first_day = date
 
-        transactions.append({
+        payments.append({
             "amount": p["amount"]["value"],
             "date": date,
+            "datetime": p["created"],
+            "type": p["type"],
+            "sub_type": p["sub_type"],
             "payee": p["counterparty_alias"]["display_name"],
             "description": p["description"].strip()
         })
 
     # For correct duplicate calculation, return only complete days
-    return [t for t in transactions if first_day < t["date"]]
+    return [p for p in payments if first_day < p["date"]]

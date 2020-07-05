@@ -34,9 +34,9 @@ ynab_budget_id = ynab.get_budget_id(args.ynab_budget_name)
 ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 
 print("Reading list of payments...")
-transactions = bunq_api.get_transactions(bunq_user_id, bunq_account_id)
+payments = bunq_api.get_payments(bunq_user_id, bunq_account_id)
 
-print("Uploading transactions to YNAB...")
-stats = ynab.upload_transactions(ynab_budget_id, ynab_account_id, transactions)
+print("Uploading {} transactions to YNAB...".format(len(payments)))
+stats = ynab.upload_payments(ynab_budget_id, ynab_account_id, payments)
 print("Uploaded {0} new and {1} duplicate transactions.".format(
       len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
