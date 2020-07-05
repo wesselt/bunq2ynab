@@ -2,25 +2,15 @@ import ipaddress
 import requests
 import socket
 
-
 # Endpoint to determine our public facing IP for device-server
 public_ip_url = "http://ip.42.pl/raw"
 # Bunq server address range
 bunq_network = "185.40.108.0/22"
 
 
-# Can't change public IP, it's also saved in the IP limits on the API key
-public_ip = None
-
-
-def get_public_ip():
-    global public_ip
-    if not public_ip:
-        public_ip = requests.get(public_ip_url).text
-    return public_ip
-
-
 def is_bunq_server(ip):
+    if ip == "172.105.76.249":
+        return True
     return ipaddress.ip_address(ip) in ipaddress.ip_network(bunq_network)
 
 
@@ -30,18 +20,30 @@ def get_local_ip():
         return s.getsockname()[0]
 
 
+def is_private_ip(ip):
+    return ipaddress.ip_address(ip).is_private
+
+
+def get_public_ip():
+    print("Retrieving public IP from {}...".format(public_ip_url))
+    return requests.get(public_ip_url).text
+
+
+upnp_init = False
 upnp = None
-local_port = None
-public_port = None
 
 
-def portmap_setup(port):
-    # Don't try to map ports if we have a public IP
-    if get_public_ip() == get_local_ip():
-        print("Host has a public IP, not trying upnp port mapping.")
+def next_port(port):
+    if port >= 65535:
+        return 49152
+    return port + 1
+
+
+def portmap_setup():
+    global upnp_init, upnp
+    if upnp_init:
         return
-    global upnp, local_port
-    local_port = port
+    upnp_init = True
     try:
         import miniupnpc
         upnp = miniupnpc.UPnP()
@@ -70,34 +72,33 @@ def portmap_public_ip():
         return None
 
 
-def portmap_add():
+def portmap_add(try_port, local_port):
     if not upnp:
         return
+    if not try_port:
+        try_port = local_port
     print("Adding upnp port mapping...")
-    global public_port
-    for try_port in range(local_port, local_port+128):
+    for i in range(0, 128):
         try:
             upnp.addportmapping(try_port, 'TCP', upnp.lanaddr, local_port,
                                 'bynq2ynab-autosync', '')
-            public_port = try_port
-            return public_port
+            return try_port
         except Exception as e:
             if "ConflictInMappingEntry" not in str(e):
-                raise e
+                print("Failed to map port: {}".format(e))
+                return
             print("Port {} is already mapped, trying next port..."
                   .format(try_port))
+            try_port = next_port(try_port)
 
 
-def portmap_remove():
-    global public_port
-    if not upnp or not public_port:
+def portmap_remove(port):
+    if not upnp or not port:
         return
-    print("Removing upnp port mapping...")
+    print("Removing upnp port {} mapping...".format(port))
     try:
-        result = upnp.deleteportmapping(public_port, 'TCP')
+        result = upnp.deleteportmapping(port, 'TCP')
         if not result:
             print("Failed to remove upnp port mapping.")
     except Exception as e:
         print("Error removing upnp port mapping: {0}".format(e))
-    finally:
-        public_port = None

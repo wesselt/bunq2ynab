@@ -22,6 +22,9 @@ session_token_file = "session_token.txt"
 # 1 to log http calls, 2 to include headers
 log_level = 0
 
+# IP to limit device-server to
+permitted_ips = None
+
 account_path = {
     'MonetaryAccountJoint': 'monetary-account-joint',
     'MonetaryAccountBank': 'monetary-account-bank',
@@ -128,13 +131,14 @@ def get_installation_token():
 
 
 def register_device():
-    ip = network.get_public_ip()
-    print("Registering IP " + ip)
+    if not permitted_ips:
+        raise Exception("Permitted IPs not set before call to register-device")
+    print("Registering permitted IPs " + permitted_ips)
     method = "v1/device-server"
     data = {
         "description": "bunq2ynab on " + socket.getfqdn(),
         "secret": get_api_token(),
-        "permitted_ips": [ip]
+        "permitted_ips": permitted_ips
     }
     post(method, data)
 
@@ -254,6 +258,11 @@ def call(action, method, data=None):
 
 def get_path(account_type):
     return account_path[account_type]
+
+
+def set_permitted_ips(ips):
+    global permitted_ips
+    permitted_ips = ips
 
 
 def set_log_level(level):
