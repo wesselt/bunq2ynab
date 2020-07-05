@@ -11,8 +11,6 @@ from lib import network
 
 # ----- Parameters
 
-firstport = 44716
-lastport = 44971
 refresh_callback_minutes = 8*60
 refresh_nocallback_minutes = 60 
 
@@ -25,8 +23,7 @@ parser.add_argument("-v", action="store_true",
 parser.add_argument("-vv", action="store_true",
     help="Show JSON messages and HTTP headers")
 parser.add_argument("--port", type=int,
-    help="TCP port number to listen to.  Default is to use the first free " +
-         "port in the {0}-{1} range.".format(firstport, lastport))
+    help="TCP port number to listen to.  Default is a random port.")
 parser.add_argument("bunq_user_name",
     help="Bunq user name (retrieve using 'python3 list_user.py')")
 parser.add_argument("bunq_account_name",
@@ -104,7 +101,9 @@ def bind_port():
     if args.port:
         serversocket.bind(('0.0.0.0', args.port))
         return serversocket, args.port
-    for port in range(firstport, lastport+1):
+    port = None
+    for i in range(0, 128):
+        port = network.next_port(port)
         try:
             serversocket.bind(('0.0.0.0', port))
             return serversocket, port

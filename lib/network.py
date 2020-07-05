@@ -1,4 +1,5 @@
 import ipaddress
+import random
 import requests
 import socket
 
@@ -34,8 +35,12 @@ upnp = None
 
 
 def next_port(port):
-    if port >= 65535:
-        return 49152
+    min_port = 49152
+    max_port = 65535
+    if not port:
+        return random.randint(min_port, max_port)
+    if port > max_port:
+        return min_port
     return port + 1
 
 
