@@ -79,8 +79,8 @@ def sync():
         print(time.strftime('%Y-%m-%d %H:%M:%S') + " Reading list of payments...")
         transactions = bunq_api.get_transactions(bunq_user_id, bunq_account_id)
         print("Uploading transactions to YNAB...")
-        stats = ynab.upload_transactions(ynab_budget_id, ynab_account_id,
-                                         transactions)
+        stats = ynab.upload_payments(ynab_budget_id, ynab_account_id,
+                                     transactions)
         print("Uploaded {0} new and {1} duplicate transactions.".format(
               len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
         print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")

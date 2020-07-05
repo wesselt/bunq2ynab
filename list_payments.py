@@ -23,7 +23,7 @@ bunq.set_log_level(log_level)
 bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
 bunq_account_id = bunq_api.get_account_id(bunq_user_id, args.bunq_account_name)
 
-method = ("v1/user/{0}/monetary-account/{1}/payment?count=24"
+method = ("v1/user/{0}/monetary-account/{1}/payment?count=100"
           .format(bunq_user_id, bunq_account_id))
 payments = bunq.get(method)
 for v in [p["Payment"] for p in payments]:
