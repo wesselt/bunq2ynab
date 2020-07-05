@@ -13,7 +13,8 @@ from lib import network
 
 firstport = 44716
 lastport = 44971
-refresh_callback_minutes = 240
+refresh_callback_minutes = 1 # 240
+refresh_nocallback_minutes = 1 # 240
 
 
 # ----- Parse command line arguments
@@ -34,18 +35,25 @@ parser.add_argument("ynab_budget_name",
     help="YNAB user name (retrieve using 'python3 list_budget.py')")
 parser.add_argument("ynab_account_name",
     help="YNAB account name (retrieve using 'python3 list_budget.py')")
+parser.add_argument("single_ip", action="store_true",
+    help="Register BUNQ device-server for current public IP only")
 args = parser.parse_args()
 log_level = 2 if args.vv else 1 if args.v else 0
 bunq.set_log_level(log_level)
 
 bunq_user_id = None
 serversocket = None
+callback_ip = None
+callback_port = None
+local_port = None
+portmap_port = None
 
 
 # ----- Adding a callback to the bunq account
 
-def add_callback(public_ip, port):
-    url = "https://{}:{}/bunq2ynab-autosync".format(public_ip, port)
+def add_callback(ip, port):
+    print("Registering callback for port {}:{}...".format(ip, port))
+    url = "https://{}:{}/bunq2ynab-autosync".format(ip, port)
     print("Adding BUNQ callback to: {}".format(url))
     set_autosync_callbacks([{
         "category": "MUTATION",
@@ -112,7 +120,29 @@ def bind_port():
 
 def setup_callback():
     global bunq_user_id, bunq_account_id, ynab_budget_id, ynab_account_id
-    global serversocket
+    global serversocket, callback_ip, callback_port, local_port, portmap_port
+
+    # Don't try to map ports if we have a public IP
+    callback_ip = callback_port = None
+    local_ip = network.get_local_ip()
+    if not network.is_private_ip(local_ip):
+        callback_ip = local_ip
+    else:
+        print("Host has a private IP, trying upnp port mapping...")
+        network.portmap_setup()
+        network.portmap_search()
+        portmap_ip = network.portmap_public_ip()
+        callback_ip = portmap_ip
+
+    # Set permitted IPs for bunq register-device call
+    if args.single_ip:
+        if callback_ip:
+            bunq.set_permitted_ips([callback_ip])
+        else:
+            ip = network.get_public_ip()
+            bunq.set_permitted_ips([ip])
+    else:
+        bunq.set_permitted_ips(['*'])
 
     if not bunq_user_id:
         print("Getting BUNQ identifiers...")
@@ -124,22 +154,24 @@ def setup_callback():
         ynab_account_id = ynab.get_account_id(ynab_budget_id,
                                                args.ynab_account_name)
 
-    if not serversocket:
-        serversocket, port = bind_port()
-        print("Listening on port {0}...".format(port))
-        serversocket.listen(5)  # max incoming calls queued
-        network.portmap_setup(port)
+    if not callback_ip:
+        print("No public IP found, not registering callback.")
+        return
 
-    network.portmap_search()
-    public_port = None
-    ip = network.portmap_public_ip()
-    if ip:
-        public_port = network.portmap_add()
-    if not public_port:
-        public_port = port
-        ip = network.get_local_ip()
-    print("Registering callback for port {}:{}...".format(ip, public_port))
-    add_callback(ip, public_port)
+    if not serversocket:
+        serversocket, local_port = bind_port()
+        print("Listening on port {0}...".format(local_port))
+        serversocket.listen(5)  # max incoming calls queued
+ 
+    if not portmap_ip:
+        callback_port = local_port
+    else:
+        portmap_port = network.portmap_add(portmap_port, local_port)
+        if not portmap_port:
+            print("Failed to map port, not registering callback.")
+            return
+        callback_port = portmap_port
+    add_callback(callback_ip, callback_port)
 
 
 def wait_for_callback():
@@ -154,7 +186,7 @@ def wait_for_callback():
             clientsocket.close()
             print("Incoming call from {}...".format(address[0]))
             if not network.is_bunq_server(address[0]):
-                print("Source IP not in BUNQ range {}".format(bunq_network))
+                print("Source IP not in BUNQ range")
             else:
                 sync()
         except socket.timeout as e:
@@ -168,24 +200,32 @@ def teardown_callback():
     except Exception as e:
         print("Error removing callback: {}".format(e))
     try:
-        network.portmap_remove()
+        network.portmap_remove(portmap_port)
     except Exception as e:
         print("Error removing upnp port mapping: {}".format(e))
 
 
 # ----- Main loop
-while True:
-    try:
-        setup_callback()
+try:
+    while True:
+        try:
+            setup_callback()
 
-        print("Starting periodic synchronization...")
-        sync()
+            print("Starting periodic synchronization...")
+            sync()
 
-        wait_for_callback()
-    except Exception as e:
-        print("Error: {}".format(e))
-        print(e)
-        print("Error occured, waiting 10 seconds.")
-        time.sleep(10)
-    finally:
-        teardown_callback()
+            if callback_ip and callback_port:
+                print("Waiting for callback for {} minutes...".format(
+                    refresh_callback_minutes))
+                wait_for_callback()
+            else:
+                print("No callback, waiting for {} minutes...".format(
+                    refresh_nocallback_minutes))
+                time.sleep(refresh_nocallback_minutes*60)
+        except Exception as e:
+            print("Error: {}".format(e))
+            print(e)
+            print("Error occured, waiting 10 seconds.")
+            time.sleep(10)
+finally:
+    teardown_callback()
