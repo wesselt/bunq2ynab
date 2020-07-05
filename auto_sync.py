@@ -13,8 +13,8 @@ from lib import network
 
 firstport = 44716
 lastport = 44971
-refresh_callback_minutes = 1 # 240
-refresh_nocallback_minutes = 1 # 240
+refresh_callback_minutes = 8*60
+refresh_nocallback_minutes = 60 
 
 
 # ----- Parse command line arguments
