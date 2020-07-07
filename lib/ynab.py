@@ -175,7 +175,7 @@ def get_ynab_transactions(budget_id, account_id, payments):
     ynab = {}
     for yt in result["transactions"]:
         ynab[yt["import_id"]] = yt
-    print("Retrieved {0} YNAB transactions.".format(len(ynab)))
+    print("YNAB has {0} transactions...".format(len(ynab)))
     return ynab
 
 
@@ -201,7 +201,7 @@ def merge(original, reversal, correction):
 
 def merge_zerofx(budget_id, account_id, payments):
     # Search for payment, reversal, payment triple
-    print("Merging ZeroFX corrections...")
+    print("Merging ZeroFX duplicates...")
     for i in range(0, len(payments)):
         reversal = payments[i]
         if reversal["sub_type"].upper() == "REVERSAL":
