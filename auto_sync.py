@@ -83,7 +83,7 @@ def sync():
     try:
         print(time.strftime('%Y-%m-%d %H:%M:%S') + " Reading list of payments...")
         transactions = bunq_api.get_payments(bunq_user_id, bunq_account_id)
-        print("Uploading transactions to YNAB...")
+        print("Uploading {} transactions to YNAB...".format(len(transactions)))
         stats = ynab.upload_payments(ynab_budget_id, ynab_account_id,
                                      transactions)
         print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")
