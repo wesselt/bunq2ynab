@@ -39,6 +39,10 @@ log_level = 2 if args.vv else 1 if args.v else 0
 bunq.set_log_level(log_level)
 
 bunq_user_id = None
+bunq_account_id = None
+ynab_budget_id = None
+ynab_account_id = None
+
 serversocket = None
 callback_ip = None
 callback_port = None
@@ -81,7 +85,7 @@ def set_autosync_callbacks(new_nfs):
 
 def sync():
     try:
-        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Reading list of payments...")
+        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Stariing sync...")
         transactions = bunq_api.get_payments(bunq_user_id, bunq_account_id)
         print("Uploading {} transactions to YNAB...".format(len(transactions)))
         stats = ynab.upload_payments(ynab_budget_id, ynab_account_id,
@@ -142,14 +146,15 @@ def setup_callback():
         bunq.set_permitted_ips(['*'])
 
     if not bunq_user_id:
-        print("Getting BUNQ identifiers...")
         bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
+    if not bunq_account_id:
         bunq_account_id = bunq_api.get_account_id(bunq_user_id,
-                                                  args.bunq_account_name)
-        print("Getting YNAB identifiers...")
+                                                        args.bunq_account_name)
+    if not ynab_budget_id:
         ynab_budget_id = ynab.get_budget_id(args.ynab_budget_name)
+    if not ynab_account_id:
         ynab_account_id = ynab.get_account_id(ynab_budget_id,
-                                               args.ynab_account_name)
+                                                        args.ynab_account_name)
 
     if not callback_ip:
         print("No public IP found, not registering callback.")
