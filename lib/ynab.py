@@ -229,37 +229,37 @@ def upload_payments(budget_id, account_id, payments):
                       if y["amount"] == milliunits and y["date"] == p["date"]])
         import_id = "YNAB:{}:{}:{}".format(milliunits, p["date"], occurrence)
         old_transaction = ynab.get(import_id)
+        p["transaction"] = {
+            "import_id": import_id,
+            "account_id": account_id,
+        }
+        p["dirty"] = False
         if old_transaction:
-            p["dirty"] = False
             p["old"] = old_transaction
-            p["transaction"] = {
-                "import_id": import_id,
-                "account_id": account_id,
-            }
         else:
-            p["dirty"] = True
             new_count = new_count + 1
             p["old"] = {}
-            p["transaction"] = {
-                "import_id": import_id,
-                "account_id": account_id,
+            p["transaction"].update({
                 "date": p["date"],
                 "amount": milliunits,
                 "payee_name": p["payee"][:50],  # YNAB payee is max 50 chars
                 "memo": p["description"][:100],  # YNAB memo is max 100 chars
                 "cleared": "cleared",
-            }
+            })
 
     merge_zerofx(budget_id, account_id, payments)
 
     method = "v1/budgets/" + budget_id + "/transactions"
-    patch_list = [p["transaction"] for p in payments if p["dirty"]]
-    if not patch_list:
-        print("No changes to upload to YNAB.")
-        return
-    print("Inserting {} and updating {} transactions...".format(
-        new_count, len(patch_list) - new_count))
-    patch(method, {"transactions": patch_list})
+    new_list = [p["transaction"] for p in payments if len(p["old"]) == 0]
+    if new_list:
+        print("Creating {} transactions...".format(len(new_list)))
+        post(method, {"transactions": new_list})
+
+    patch_list = [p["transaction"] for p in payments
+                  if len(p["old"]) > 0 and p["dirty"]]
+    if patch_list:
+        print("Patching {} transactions...".format(len(patch_list)))
+        patch(method, {"transactions": patch_list})
 
 
 # -----------------------------------------------------------------------------
