@@ -76,6 +76,8 @@ def call(action, method, data_obj=None):
         reply = requests.get(url + method, headers=headers)
     elif action == 'POST':
         reply = requests.post(url + method, headers=headers, data=data)
+    elif action == 'PATCH':
+        reply = requests.patch(url + method, headers=headers, data=data)
     log_reply(reply)
     result = reply.json()
     if "error" in result:
@@ -165,13 +167,6 @@ def find_corrected(payments, i):
         return b
 
 
-def get_category(p, ynab):
-    import_id = p["transaction"]["import_id"]
-    if import_id not in ynab:
-        return None
-    return ynab[import_id]["category_id"]
-
-
 def get_ynab_transactions(budget_id, account_id, payments):
     # Retrieve current YNAB transactions
     first_date = payments[0]["date"]
@@ -184,10 +179,29 @@ def get_ynab_transactions(budget_id, account_id, payments):
     return ynab
 
 
+def merge(original, reversal, correction):
+    original_cat = original["old"].get("category_id")
+    if original_cat:
+        if not reversal["old"].get("category_id"):
+            print("Categorizing zerofx reversal...")
+            reversal["transaction"]["category_id"] = original_cat
+            reversal["dirty"] = True
+        if not correction["old"].get("category_id"):
+            print("Categorizing zerofx correction...")
+            correction["transaction"]["category_id"] = original_cat
+            correction["dirty"] = True
+    if original["old"].get("approved"):
+        if not reversal["old"].get("approved"):
+            reversal["transaction"]["approved"] = True
+            reversal["dirty"] = True
+        if not correction["old"].get("approved"):
+            correction["transaction"]["approved"] = True
+            correction["dirty"] = True
+
+
 def merge_zerofx(budget_id, account_id, payments):
     # Search for payment, reversal, payment triple
     print("Merging ZeroFX corrections...")
-    ynab = {}
     for i in range(0, len(payments)):
         reversal = payments[i]
         if reversal["sub_type"].upper() == "REVERSAL":
@@ -197,19 +211,7 @@ def merge_zerofx(budget_id, account_id, payments):
             correction = find_corrected(payments, i)
             if not correction:
                 continue
-            if not ynab:
-                ynab = get_ynab_transactions(budget_id, account_id, payments)
-            original_cat = get_category(original, ynab)
-            if not original_cat:
-                continue
-            reversal_cat = get_category(reversal, ynab)
-            if not reversal_cat:
-                print("Categorizing zerofx reversal...")
-                reversal["transaction"]["category_id"] = original_cat
-            correction_cat = get_category(correction, ynab)
-            if not correction_cat:
-                print("Categorizing zerofx correction...")
-                correction["transaction"]["category_id"] = original_cat
+            merge(original, reversal, correction)
 
 
 # -----------------------------------------------------------------------------
@@ -218,28 +220,46 @@ def upload_payments(budget_id, account_id, payments):
     if len(payments) == 0:
         return
     transactions = []
+    new_count = 0
+    ynab = get_ynab_transactions(budget_id, account_id, payments)
     for p in payments:
         milliunits = str((1000 * Decimal(p["amount"])).quantize(1))
         # Calculate import_id for YNAB duplicate detection
         occurrence = 1 + len([y for y in transactions
                       if y["amount"] == milliunits and y["date"] == p["date"]])
-        p["transaction"] = {
-            "account_id": account_id,
-            "date": p["date"],
-            "amount": milliunits,
-            "payee_name": p["payee"][:50],  # YNAB payee is max 50 chars
-            "memo": p["description"][:100],  # YNAB memo is max 100 chars
-            "cleared": "cleared",
-            "import_id": "YNAB:{}:{}:{}".format(
-                                             milliunits, p["date"], occurrence)
-        }
+        import_id = "YNAB:{}:{}:{}".format(milliunits, p["date"], occurrence)
+        old_transaction = ynab.get(import_id)
+        if old_transaction:
+            p["dirty"] = False
+            p["old"] = old_transaction
+            p["transaction"] = {
+                "import_id": import_id,
+                "account_id": account_id,
+            }
+        else:
+            p["dirty"] = True
+            new_count = new_count + 1
+            p["old"] = {}
+            p["transaction"] = {
+                "import_id": import_id,
+                "account_id": account_id,
+                "date": p["date"],
+                "amount": milliunits,
+                "payee_name": p["payee"][:50],  # YNAB payee is max 50 chars
+                "memo": p["description"][:100],  # YNAB memo is max 100 chars
+                "cleared": "cleared",
+            }
 
     merge_zerofx(budget_id, account_id, payments)
 
-    method = "v1/budgets/" + budget_id + "/transactions/bulk"
-    result = post(method, {"transactions":
-                           [p["transaction"] for p in payments]})
-    return result["bulk"]
+    method = "v1/budgets/" + budget_id + "/transactions"
+    patch_list = [p["transaction"] for p in payments if p["dirty"]]
+    if not patch_list:
+        print("No changes to upload to YNAB.")
+        return
+    print("Inserting {} and updating {} transactions...".format(
+        new_count, len(patch_list) - new_count))
+    patch(method, {"transactions": patch_list})
 
 
 # -----------------------------------------------------------------------------
@@ -255,3 +275,7 @@ def get(method):
 
 def post(method, data):
     return call('POST', method, data)
+
+
+def patch(method, data):
+    return call('PATCH', method, data)

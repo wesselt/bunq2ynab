@@ -37,6 +37,4 @@ print("Reading list of payments...")
 payments = bunq_api.get_payments(bunq_user_id, bunq_account_id)
 
 print("Uploading {} transactions to YNAB...".format(len(payments)))
-stats = ynab.upload_payments(ynab_budget_id, ynab_account_id, payments)
-print("Uploaded {0} new and {1} duplicate transactions.".format(
-      len(stats["transaction_ids"]), len(stats["duplicate_import_ids"])))
+ynab.upload_payments(ynab_budget_id, ynab_account_id, payments)
