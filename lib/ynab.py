@@ -216,17 +216,24 @@ def merge_zerofx(budget_id, account_id, payments):
 
 # -----------------------------------------------------------------------------
 
+
+# Calculate occurernce for YNAB duplicate detection
+def calculate_occurrence(same_day, p):
+    if len(same_day) > 0 and same_day[0]["date"] != p["date"]:
+        same_day.clear()
+    same_day.append(p)
+    return len([s for s in same_day if s["amount"] == p["amount"]])
+
+
 def upload_payments(budget_id, account_id, payments):
     if len(payments) == 0:
         return
-    transactions = []
     new_count = 0
     ynab = get_ynab_transactions(budget_id, account_id, payments)
+    same_day = []
     for p in payments:
         milliunits = str((1000 * Decimal(p["amount"])).quantize(1))
-        # Calculate import_id for YNAB duplicate detection
-        occurrence = 1 + len([y for y in transactions
-                      if y["amount"] == milliunits and y["date"] == p["date"]])
+        occurrence = calculate_occurrence(same_day, p)
         import_id = "YNAB:{}:{}:{}".format(milliunits, p["date"], occurrence)
         old_transaction = ynab.get(import_id)
         p["transaction"] = {
