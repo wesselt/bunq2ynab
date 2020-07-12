@@ -36,5 +36,5 @@ ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 print("Reading list of payments...")
 payments = bunq_api.get_payments(bunq_user_id, bunq_account_id)
 
-print("Uploading {} transactions to YNAB...".format(len(payments)))
+print("Retrieved {} bunq transactions...".format(len(payments)))
 ynab.upload_payments(ynab_budget_id, ynab_account_id, payments)
