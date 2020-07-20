@@ -25,12 +25,6 @@ log_level = 0
 # IP to limit device-server to
 permitted_ips = None
 
-account_path = {
-    'MonetaryAccountJoint': 'monetary-account-joint',
-    'MonetaryAccountBank': 'monetary-account-bank',
-    'MonetaryAccountSavings': 'monetary-account-savings',
-}
-
 
 # -----------------------------------------------------------------------------
 
@@ -255,10 +249,6 @@ def call(action, method, data=None):
 
 
 # -----------------------------------------------------------------------------
-
-def get_path(account_type):
-    return account_path[account_type]
-
 
 def set_permitted_ips(ips):
     global permitted_ips
