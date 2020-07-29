@@ -33,8 +33,9 @@ parser.add_argument("ynab_budget_name",
     help="YNAB user name (retrieve using 'python3 list_budget.py')")
 parser.add_argument("ynab_account_name",
     help="YNAB account name (retrieve using 'python3 list_budget.py')")
-parser.add_argument("single_ip", action="store_true",
-    help="Register BUNQ device-server for current public IP only")
+parser.add_argument("--wildcard-ip", action="store_true",
+    help="Register BUNQ device-server for all IP addresses instead of the " +
+         "current public IP.  Useful if your public IP can change.")
 args = parser.parse_args()
 log_level = 2 if args.vv else 1 if args.v else 0
 bunq.set_log_level(log_level)
@@ -127,6 +128,7 @@ def setup_callback():
     local_ip = network.get_local_ip()
     if not network.is_private_ip(local_ip):
         callback_ip = local_ip
+        portmap_ip = None
     else:
         print("Host has a private IP, trying upnp port mapping...")
         network.portmap_setup()
@@ -135,14 +137,14 @@ def setup_callback():
         callback_ip = portmap_ip
 
     # Set permitted IPs for bunq register-device call
-    if args.single_ip:
+    if args.wildcard_ip:
+        bunq.set_permitted_ips(['*'])
+    else:
         if callback_ip:
             bunq.set_permitted_ips([callback_ip])
         else:
             ip = network.get_public_ip()
             bunq.set_permitted_ips([ip])
-    else:
-        bunq.set_permitted_ips(['*'])
 
     if not bunq_user_id:
         bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)

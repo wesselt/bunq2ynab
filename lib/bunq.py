@@ -129,11 +129,13 @@ def get_installation_token():
 
 def register_device():
     if not permitted_ips:
-        raise Exception("Permitted IPs not set before call to register-device")
-    print("Registering permitted IPs " + permitted_ips)
+        public_ip = network.get_public_ip()
+        print("Public IP = {}".format(public_ip))
+        set_permitted_ips([public_ip])
+    print("Registering permitted IPs {}".format(",".join(permitted_ips)))
     method = "v1/device-server"
     data = {
-        "description": "bunq2ynab on " + socket.getfqdn(),
+        "description": "bunq2ynab on " + network.get_hostname(),
         "secret": get_api_token(),
         "permitted_ips": permitted_ips
     }

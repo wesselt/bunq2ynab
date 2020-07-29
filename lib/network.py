@@ -26,8 +26,18 @@ def is_private_ip(ip):
 
 
 def get_public_ip():
+    local_ip = get_local_ip()
+    if not is_private_ip(local_ip):
+        return local_ip
     print("Retrieving public IP from {}...".format(public_ip_url))
     return requests.get(public_ip_url).text
+
+
+def get_hostname():
+    fqdn = socket.getfqdn()
+    if "localhost" not in fqdn:
+        return fqdn
+    return socket.gethostname()
 
 
 upnp_init = False
