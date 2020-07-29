@@ -116,7 +116,7 @@ def get_account_id(budget_id, account_name):
     raise Exception("YNAB account '{0}' not found".format(account_name))
 
 
-def get_transactions(budget_id, account_id):
+def get_raw_transactions(budget_id, account_id):
     dt = datetime.datetime.now() - datetime.timedelta(days=-35)
     dt_str = dt.strftime("%Y-%m-%d")
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
@@ -127,6 +127,12 @@ def get_transactions(budget_id, account_id):
     result = get("v1/budgets/{0}/accounts/{1}/transactions"
         .format(budget_id, account_id))
     return result["transactions"]
+
+
+def get_transactions(budget_id, account_id):
+    transactions = get_raw_transactions(budget_id, account_id)
+    return [t for t in transactions if
+        t["payee_name"] != "Starting Balance"]
 
 
 # -----------------------------------------------------------------------------
@@ -146,7 +152,7 @@ def upload_transactions(budget_id, transactions):
     patch_list = [t for t in transactions
                   if not t.get("new") and t.get("dirty")]
     for patch_batch in chunker(patch_list, 100):
-        print("Patching {} transactions...".format(len(new_batch)))
+        print("Patching {} transactions...".format(len(patch_batch)))
         patch(method, {"transactions": patch_batch})
 
     return len(new_list), len(patch_list)

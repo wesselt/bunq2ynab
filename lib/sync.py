@@ -1,6 +1,5 @@
 import datetime
 from decimal import Decimal
-from pprint import pprint
 
 from lib import ynab
 from lib import bunq_api
@@ -18,51 +17,29 @@ def date_subtract(dt_str, days):
     return dt.strftime("%Y-%m-%d")
 
 
-def find_original(transactions, i):
-    r = transactions[i]
-    rp = r["payment"]
-    min_date = date_subtract(r["date"], 4)
-    while True:
-        i = i - 1
-        if i < 0:
-            return None
-        o = transactions[i]
-        if o["date"] < min_date:
-            return None
-        op = o.get("payment")
-        if (not op or
-            op["sub_type"].upper() != "PAYMENT" or
-            o["amount"] != -r["amount"] or
-            op["payee"] != rp["payee"] or
-            "Refund: " + op["description"] != rp["description"]):
-            continue
-        return o
+def find_original(transactions, reversal):
+    min_date = date_subtract(reversal["date"], 5)
+    return next((original for original in transactions if
+        "payment" in original and
+        min_date <= original["date"] and
+        original["date"] <= reversal["date"] and
+        original["payment"]["sub_type"] == "PAYMENT" and
+        original["amount"] == -reversal["amount"] and
+        original["payment"]["payee"] == reversal["payment"]["payee"] and
+        "Refund: " + original["payment"]["description"] ==
+            reversal["payment"]["description"]
+    ), None)
 
 
-def find_corrected(transactions, i):
-    r = transactions[i]
-    rp = r["payment"]
-    r_descr = strip_descr(rp["description"])
-    pprint("Finding corrected of")
-    pprint(rp)
-    while True:
-        i = i + 1
-        if i == len(transactions):
-            return None
-        c = transactions[i]
-        if c["date"] != r["date"]:
-            pprint("Past date of reversal")
-            pprint(c)
-            return None
-        cp = c.get("payment")
-        if (not cp or
-            cp["sub_type"].upper() != "PAYMENT" or
-            cp["payee"] != rp["payee"] or
-            "Refund: " + strip_descr(cp["description"]) != r_descr):
-            pprint("Skipping corrected candidate")
-            pprint(cp)
-            continue
-        return c
+def find_corrected(transactions, reversal):
+    return next((corrected for corrected in transactions if
+        "payment" in corrected and
+        corrected["date"] == reversal["date"] and
+        corrected["payment"]["sub_type"] == "PAYMENT" and
+        corrected["payment"]["payee"] == reversal["payment"]["payee"] and
+        "Refund: " + strip_descr(corrected["payment"]["description"]) ==
+            strip_descr(reversal["payment"]["description"])
+     ), None)
 
 
 def merge(original, reversal, corrected):
@@ -78,35 +55,26 @@ def merge(original, reversal, corrected):
             corrected["dirty"] = True
     if original.get("approved"):
         if not reversal.get("approved"):
+            print("Approving zerofx reversal...")
             reversal["approved"] = True
             reversal["dirty"] = True
         if not corrected.get("approved"):
+            print("Approving zerofx corrected...")
             corrected["approved"] = True
             corrected["dirty"] = True
 
 
 def merge_zerofx(transactions):
-    pprint(transactions)
     # Search for payment, reversal, payment triple
     print("Merging ZeroFX duplicates...")
-    for i in range(0, len(transactions)):
-        reversal = transactions[i]
-        rp = reversal.get("payment")
-        if rp and rp.get("sub_type") == "REVERSAL":
-            original = find_original(transactions, i)
+    for reversal in [t for t in transactions if "payment" in t]:
+        if reversal["payment"]["sub_type"] == "REVERSAL":
+            original = find_original(transactions, reversal)
             if not original:
-                print("Didn't find original:")
-                pprint(reversal)
                 continue
-            pprint("Original = ")
-            pprint(original)
-            corrected = find_corrected(transactions, i)
+            corrected = find_corrected(transactions, reversal)
             if not corrected:
-                print("Didn't find corrected:")
-                pprint(reversal)
                 continue
-            pprint("Corrected = ")
-            pprint(original)
             merge(original, reversal, corrected)
 
 
@@ -127,7 +95,7 @@ def extend_transactions(transactions, payments, ynab_account_id):
         ynab[t["import_id"]] = t
     same_day = []
     for p in payments:
-        milliunits = str((1000 * Decimal(p["amount"])).quantize(1))
+        milliunits = int((1000 * Decimal(p["amount"])).quantize(1))
         occurrence = calculate_occurrence(same_day, p)
         import_id = "YNAB:{}:{}:{}".format(milliunits, p["date"], occurrence)
         transaction = ynab.get(import_id)
