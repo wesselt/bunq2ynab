@@ -25,6 +25,9 @@ log_level = 0
 # IP to limit device-server to
 permitted_ips = None
 
+# Pagination
+older_url = None
+
 
 # -----------------------------------------------------------------------------
 
@@ -245,6 +248,8 @@ def call(action, method, data=None):
             return result
     if "Error" in result:
         raise Exception(result["Error"][0]["error_description"])
+    global older_url
+    older_url = result.get("Pagination", {}).get("older_url")
     return result["Response"]
 
 
@@ -262,6 +267,16 @@ def set_log_level(level):
 
 def get(method):
     return call('GET', method)
+
+
+def has_previous():
+    return older_url is not None
+
+
+def previous():
+    if not older_url:
+        return []
+    return call('GET', older_url.lstrip("/"))
 
 
 def post(method, data):

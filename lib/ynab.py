@@ -1,11 +1,9 @@
 import datetime
-from decimal import Decimal
 import json
 import os
 import requests
 import uuid
 import sys
-
 
 url = 'https://api.youneedabudget.com/'
 personal_access_token_file = "personal_access_token.txt"
@@ -118,155 +116,40 @@ def get_account_id(budget_id, account_name):
     raise Exception("YNAB account '{0}' not found".format(account_name))
 
 
-# -----------------------------------------------------------------------------
-
-def strip_descr(descr):
-    if not "," in descr:
-        return descr
-    return ",".join(descr.split(",")[:-1])
-
-
-def date_subtract(dt_str, days):
-    dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
-    dt = dt - datetime.timedelta(days=days)
-    return dt.strftime("%Y-%m-%d")
-
-
-def find_original(payments, i):
-    a = payments[i]
-    min_date = date_subtract(a["date"], 4)
-    while True:
-        i = i - 1
-        if i < 0:
-            return None
-        b = payments[i]
-        if b["date"] < min_date:
-            return None
-        if (b["sub_type"].upper() != "PAYMENT" or
-            Decimal(b["amount"]) != -Decimal(a["amount"]) or
-            b["payee"] != a["payee"] or
-            "Refund: " + b["description"] != a["description"]):
-            continue
-        return b
-
-
-def find_corrected(payments, i):
-    a = payments[i]
-    a_descr = strip_descr(a["description"])
-    while True:
-        i = i + 1
-        if i == len(payments):
-            return None
-        b = payments[i]
-        if b["date"] != a["date"]:
-            return None
-        if (b["sub_type"].upper() != "PAYMENT" or
-            b["payee"] != a["payee"] or
-            a_descr != "Refund: " + strip_descr(b["description"])):
-            continue
-        return b
-
-
-def get_ynab_transactions(budget_id, account_id, payments):
-    # Retrieve current YNAB transactions
-    first_date = payments[0]["date"]
+def get_transactions(budget_id, account_id):
+    dt = datetime.datetime.now() - datetime.timedelta(days=-35)
+    dt_str = dt.strftime("%Y-%m-%d")
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
-        .format(budget_id, account_id, first_date))
-    ynab = {}
-    for yt in result["transactions"]:
-        ynab[yt["import_id"]] = yt
-    print("YNAB has {0} transactions...".format(len(ynab)))
-    return ynab
-
-
-def merge(original, reversal, correction):
-    original_cat = original["old"].get("category_id")
-    if original_cat:
-        if not reversal["old"].get("category_id"):
-            print("Categorizing zerofx reversal...")
-            reversal["transaction"]["category_id"] = original_cat
-            reversal["dirty"] = True
-        if not correction["old"].get("category_id"):
-            print("Categorizing zerofx correction...")
-            correction["transaction"]["category_id"] = original_cat
-            correction["dirty"] = True
-    if original["old"].get("approved"):
-        if not reversal["old"].get("approved"):
-            reversal["transaction"]["approved"] = True
-            reversal["dirty"] = True
-        if not correction["old"].get("approved"):
-            correction["transaction"]["approved"] = True
-            correction["dirty"] = True
-
-
-def merge_zerofx(budget_id, account_id, payments):
-    # Search for payment, reversal, payment triple
-    print("Merging ZeroFX duplicates...")
-    for i in range(0, len(payments)):
-        reversal = payments[i]
-        if reversal["sub_type"].upper() == "REVERSAL":
-            original = find_original(payments, i)
-            if not original:
-                continue
-            correction = find_corrected(payments, i)
-            if not correction:
-                continue
-            merge(original, reversal, correction)
+        .format(budget_id, account_id, dt_str))
+    transactions = result["transactions"]
+    if len(transactions) > 0:
+        return transactions
+    result = get("v1/budgets/{0}/accounts/{1}/transactions"
+        .format(budget_id, account_id))
+    return result["transactions"]
 
 
 # -----------------------------------------------------------------------------
 
-
-# Calculate occurernce for YNAB duplicate detection
-def calculate_occurrence(same_day, p):
-    if len(same_day) > 0 and same_day[0]["date"] != p["date"]:
-        same_day.clear()
-    same_day.append(p)
-    return len([s for s in same_day if s["amount"] == p["amount"]])
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
 
-def upload_payments(budget_id, account_id, payments):
-    if len(payments) == 0:
-        return
-    new_count = 0
-    ynab = get_ynab_transactions(budget_id, account_id, payments)
-    same_day = []
-    for p in payments:
-        milliunits = str((1000 * Decimal(p["amount"])).quantize(1))
-        occurrence = calculate_occurrence(same_day, p)
-        import_id = "YNAB:{}:{}:{}".format(milliunits, p["date"], occurrence)
-        old_transaction = ynab.get(import_id)
-        p["transaction"] = {
-            "import_id": import_id,
-            "account_id": account_id,
-        }
-        p["dirty"] = False
-        if old_transaction:
-            p["old"] = old_transaction
-        else:
-            new_count = new_count + 1
-            p["old"] = {}
-            p["transaction"].update({
-                "date": p["date"],
-                "amount": milliunits,
-                "payee_name": p["payee"][:50],  # YNAB payee is max 50 chars
-                "memo": p["description"][:100],  # YNAB memo is max 100 chars
-                "cleared": "cleared",
-            })
-
-    merge_zerofx(budget_id, account_id, payments)
-
+def upload_transactions(budget_id, transactions):
     method = "v1/budgets/" + budget_id + "/transactions"
-    new_list = [p["transaction"] for p in payments if len(p["old"]) == 0]
-    if new_list:
-        print("Creating {} transactions...".format(len(new_list)))
-        post(method, {"transactions": new_list})
 
-    patch_list = [p["transaction"] for p in payments
-                  if len(p["old"]) > 0 and p["dirty"]]
-    if patch_list:
-        print("Patching {} transactions...".format(len(patch_list)))
-        patch(method, {"transactions": patch_list})
+    new_list = [t for t in transactions if t.get("new")]
+    for new_batch in chunker(new_list, 100):
+        print("Creating {} transactions...".format(len(new_batch)))
+        post(method, {"transactions": new_batch})
+
+    patch_list = [t for t in transactions
+                  if not t.get("new") and t.get("dirty")]
+    for patch_batch in chunker(patch_list, 100):
+        print("Patching {} transactions...".format(len(new_batch)))
+        patch(method, {"transactions": patch_batch})
+
+    return len(new_list), len(patch_list)
 
 
 # -----------------------------------------------------------------------------
