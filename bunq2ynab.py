@@ -3,6 +3,7 @@ import sys
 
 from lib import bunq
 from lib import bunq_api
+from lib import sync
 from lib import ynab
 
 
@@ -24,17 +25,5 @@ log_level = 2 if args.vv else 1 if args.v else 0
 bunq.set_log_level(log_level)
 ynab.set_log_level(log_level)
 
-
-print("Getting BUNQ identifiers...")
-bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
-bunq_account_id = bunq_api.get_account_id(bunq_user_id, args.bunq_account_name)
-
-print("Getting YNAB identifiers...")
-ynab_budget_id = ynab.get_budget_id(args.ynab_budget_name)
-ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
-
-print("Reading list of payments...")
-payments = bunq_api.get_payments(bunq_user_id, bunq_account_id)
-
-print("Retrieved {} bunq transactions...".format(len(payments)))
-ynab.upload_payments(ynab_budget_id, ynab_account_id, payments)
+sync.synchronize(args.bunq_user_name, args.bunq_account_name,
+                 args.ynab_budget_name, args.ynab_account_name)

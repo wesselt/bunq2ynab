@@ -23,6 +23,7 @@ ynab_account_id = ynab.get_account_id(ynab_budget_id, args.ynab_account_name)
 
 
 def print_transaction(t):
+    print(t["import_id"])
     print("{0}  {1:10,}  {2:<25} > {3}".format(
         t["date"], Decimal(t["amount"]), t["payee_name"], t["category_name"]))
 

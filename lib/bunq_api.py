@@ -42,30 +42,28 @@ def put_callbacks(user_id, account_id, new_notifications):
     bunq.post(method, data)
 
 
-def get_payments(user_id, account_id):
-    method = ("v1/user/{0}/monetary-account/{1}/payment?count=100"
-              .format(user_id, account_id))
-    payment_list = bunq.get(method)
-
-    print("Translating payments...")
-    first_day = None
-    unsorted_payments = [p["Payment"] for p in payment_list]
-    sorted_payments = sorted(unsorted_payments, key=lambda p: p["created"])
-    payments = []
-    for p in sorted_payments:
-        date = p["created"][:10]
-        if not first_day:
-            first_day = date
-
-        payments.append({
+def map_payments(result):
+    raw_payments = [p["Payment"] for p in result]
+    payments = map(lambda p: {
             "amount": p["amount"]["value"],
-            "date": date,
-            "datetime": p["created"],
+            "date": p["created"][:10],
             "type": p["type"],
             "sub_type": p["sub_type"],
             "payee": p["counterparty_alias"]["display_name"],
             "description": p["description"].strip()
-        })
+        }, raw_payments)
+    return list(payments)
 
+
+def get_payments(user_id, account_id, start_date):
+    method = ("v1/user/{0}/monetary-account/{1}/payment?count=200"
+              .format(user_id, account_id))
+    payments = map_payments(bunq.get(method))
+    got_date = payments[-1]["date"]
+    print("Retrieved back to {}...".format(got_date))
+    while bunq.has_previous() and start_date <= got_date:
+        payments.extend(map_payments(bunq.previous()))
+        got_date = payments[-1]["date"]
+        print("Retrieved back to {}...".format(got_date))
     # For correct duplicate calculation, return only complete days
-    return [p for p in payments if first_day < p["date"]]
+    return [p for p in payments if start_date <= p["date"]]
