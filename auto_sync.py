@@ -5,8 +5,9 @@ import time
 
 from lib import bunq
 from lib import bunq_api
-from lib import ynab
 from lib import network
+from lib import sync
+from lib import ynab
 
 
 # ----- Parameters
@@ -83,13 +84,11 @@ def set_autosync_callbacks(new_nfs):
 
 # ----- Synchronize with YNAB
 
-def sync():
+def synchronize():
     try:
         print(time.strftime('%Y-%m-%d %H:%M:%S') + " Stariing sync...")
-        transactions = bunq_api.get_payments(bunq_user_id, bunq_account_id)
-        print("Retrieved {} bunq transactions...".format(len(transactions)))
-        stats = ynab.upload_payments(ynab_budget_id, ynab_account_id,
-                                     transactions)
+        sync.synchronize(bunq_user_id, bunq_account_id,
+                         ynab_budget_id, ynab_account_id)
         print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")
         print("")
     except Exception as e:
@@ -192,7 +191,7 @@ def wait_for_callback():
             if not network.is_bunq_server(address[0]):
                 print("Source IP not in BUNQ range")
             else:
-                sync()
+                synchronize()
         except socket.timeout as e:
             return
 
@@ -216,7 +215,7 @@ try:
             setup_callback()
 
             print("Starting periodic synchronization...")
-            sync()
+            synchronize()
 
             if callback_ip and callback_port:
                 wait_for_callback()

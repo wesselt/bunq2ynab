@@ -117,7 +117,7 @@ def get_account_id(budget_id, account_name):
 
 
 def get_raw_transactions(budget_id, account_id):
-    dt = datetime.datetime.now() - datetime.timedelta(days=-35)
+    dt = datetime.datetime.now() - datetime.timedelta(days=35)
     dt_str = dt.strftime("%Y-%m-%d")
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
         .format(budget_id, account_id, dt_str))
