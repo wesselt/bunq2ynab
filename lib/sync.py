@@ -130,16 +130,8 @@ def retrieve_payments_from(transactions):
     return min(start_dt, min_dt)
 
 
-def synchronize(bunq_user_name, bunq_account_name,
-                ynab_budget_name, ynab_account_name):
-
-    print("Getting ynab identifiers...")
-    ynab_budget_id = ynab.get_budget_id(ynab_budget_name)
-    ynab_account_id = ynab.get_account_id(ynab_budget_id, ynab_account_name)
-
-    print("Getting bunq identifiers...")
-    bunq_user_id = bunq_api.get_user_id(bunq_user_name)
-    bunq_account_id = bunq_api.get_account_id(bunq_user_id, bunq_account_name)
+def synchronize(bunq_user_id, bunq_account_id,
+                ynab_budget_id, ynab_account_id):
 
     print("Reading ynab transactions...")
     transactions = ynab.get_transactions(ynab_budget_id, ynab_account_id)
