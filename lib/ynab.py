@@ -116,23 +116,19 @@ def get_account_id(budget_id, account_name):
     raise Exception("YNAB account '{0}' not found".format(account_name))
 
 
-def get_raw_transactions(budget_id, account_id):
+def get_transactions(budget_id, account_id):
     dt = datetime.datetime.now() - datetime.timedelta(days=35)
     dt_str = dt.strftime("%Y-%m-%d")
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
         .format(budget_id, account_id, dt_str))
-    transactions = result["transactions"]
-    if len(transactions) > 0:
+    transactions = [t for t in result["transactions"]
+        if t["payee_name"] != "Starting Balance"]
+    if transactions:
         return transactions
     result = get("v1/budgets/{0}/accounts/{1}/transactions"
         .format(budget_id, account_id))
-    return result["transactions"]
-
-
-def get_transactions(budget_id, account_id):
-    transactions = get_raw_transactions(budget_id, account_id)
-    return [t for t in transactions if
-        t["payee_name"] != "Starting Balance"]
+    return [t for t in result["transactions"]
+        if t["payee_name"] != "Starting Balance"]
 
 
 # -----------------------------------------------------------------------------
@@ -143,16 +139,19 @@ def chunker(seq, size):
 
 def upload_transactions(budget_id, transactions):
     method = "v1/budgets/" + budget_id + "/transactions"
+    reversed_transactions = reversed(transactions)
 
-    new_list = [t for t in transactions if t.get("new")]
+    new_list = [t for t in reversed_transactions if t.get("new")]
     for new_batch in chunker(new_list, 100):
-        print("Creating {} transactions...".format(len(new_batch)))
+        print("Creating transactions up to {}..."
+              .format(new_batch[-1]["date"]))
         post(method, {"transactions": new_batch})
 
-    patch_list = [t for t in transactions
+    patch_list = [t for t in reversed_transactions
                   if not t.get("new") and t.get("dirty")]
     for patch_batch in chunker(patch_list, 100):
-        print("Patching {} transactions...".format(len(patch_batch)))
+        print("Patching transactions up to {}..."
+              .format(patch_batch[-1]["date"]))
         patch(method, {"transactions": patch_batch})
 
     return len(new_list), len(patch_list)
