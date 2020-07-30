@@ -87,7 +87,7 @@ def set_autosync_callbacks(new_nfs):
 
 def synchronize():
     try:
-        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Stariing sync...")
+        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Starting sync...")
         sync.synchronize(bunq_user_id, bunq_account_id,
                          ynab_budget_id, ynab_account_id)
         print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")
