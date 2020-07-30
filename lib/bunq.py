@@ -258,7 +258,6 @@ def call(action, method, data=None):
 
 def set_single_ip(value):
     global single_ip
-    print(value)
     single_ip = value
 
 
