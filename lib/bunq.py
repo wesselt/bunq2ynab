@@ -23,7 +23,7 @@ session_token_file = "session_token.txt"
 log_level = 0
 
 # IP to limit device-server to
-permitted_ips = None
+single_ip = False
 
 # Pagination
 older_url = None
@@ -128,10 +128,9 @@ def get_installation_token():
 
 
 def register_device():
-    if not permitted_ips:
-        public_ip = network.get_public_ip()
-        print("Public IP = {}".format(public_ip))
-        set_permitted_ips([public_ip])
+    permitted_ips = ['*']
+    if single_ip:
+        permitted_ips = [network.get_public_ip()]
     print("Registering permitted IPs {}".format(",".join(permitted_ips)))
     method = "v1/device-server"
     data = {
@@ -257,9 +256,10 @@ def call(action, method, data=None):
 
 # -----------------------------------------------------------------------------
 
-def set_permitted_ips(ips):
-    global permitted_ips
-    permitted_ips = ips
+def set_single_ip(value):
+    global single_ip
+    print(value)
+    single_ip = value
 
 
 def set_log_level(level):

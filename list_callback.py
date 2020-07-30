@@ -13,9 +13,13 @@ parser.add_argument("-vv", action="store_true",
     help="Show JSON messages and HTTP headers")
 parser.add_argument("bunq_user_name",
     help="Bunq user name (retrieve using 'python3 list_user.py')")
+parser.add_argument("--single-ip", action="store_true",
+    help="Register BUNQ device-server with a single IP address instead " +
+         "of a wildcard for all IPs.  Useful if you have a fixed IP.")
 args = parser.parse_args()
 log_level = 2 if args.vv else 1 if args.v else 0
 bunq.set_log_level(log_level)
+bunq.set_single_ip(args.single_ip)
 
 
 def print_notification_filter(nfs):
