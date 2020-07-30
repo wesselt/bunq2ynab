@@ -116,11 +116,9 @@ def get_account_id(budget_id, account_name):
     raise Exception("YNAB account '{0}' not found".format(account_name))
 
 
-def get_transactions(budget_id, account_id):
-    dt = datetime.datetime.now() - datetime.timedelta(days=35)
-    dt_str = dt.strftime("%Y-%m-%d")
+def get_transactions(budget_id, account_id, start_date):
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
-        .format(budget_id, account_id, dt_str))
+        .format(budget_id, account_id, start_date))
     transactions = [t for t in result["transactions"]
         if t["payee_name"] != "Starting Balance"]
     if transactions:
