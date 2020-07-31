@@ -137,8 +137,10 @@ def synchronize(bunq_user_id, bunq_account_id,
     print("Retrieved {} ynab transactions...".format(len(transactions)))
 
     # Push start date back to latest YNAB entry
-    if transactions:
-        start_dt = transactions[-1]["date"]
+    if transactions and not sync_all:
+        last_transaction_dt = transactions[-1]["date"]
+        if last_transaction_dt < start_dt:
+            start_dt = last_transaction_dt
     else:
         start_dt = "2000-01-01"
 
