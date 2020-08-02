@@ -102,12 +102,15 @@ def extend_transactions(transactions, payments, ynab_account_id):
         if transaction:
             transaction["payment"] = p
         else:
+            # YNAB payee is max 50 chars 
+            iban_descr = " ({})".format(p["iban"])
+            payee_descr = p["payee"][:50-len(iban_descr)] + iban_descr
             transactions.append({
                 "import_id": import_id,
                 "account_id": ynab_account_id,
                 "date": p["date"],
                 "amount": milliunits,
-                "payee_name": p["payee"][:50],  # YNAB payee is max 50 chars
+                "payee_name": payee_descr,  
                 "memo": p["description"][:100],  # YNAB memo is max 100 chars
                 "cleared": "cleared",
                 "payment": p,

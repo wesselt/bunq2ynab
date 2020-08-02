@@ -49,6 +49,7 @@ def map_payments(result):
             "date": p["created"][:10],
             "type": p["type"],
             "sub_type": p["sub_type"],
+            "iban": p["counterparty_alias"]["iban"],
             "payee": p["counterparty_alias"]["display_name"],
             "description": p["description"].strip()
         }, raw_payments)
