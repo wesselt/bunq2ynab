@@ -7,23 +7,11 @@ import socket
 import sys
 
 from lib import network
+from lib.config import config
+from lib.state import state
 
 
 url = "https://api.bunq.com/"
-
-# User-created file with the BUNQ API key
-api_token_file = "api_token.txt"
-
-# Files that store BUNQ installation and session state
-private_key_file = "private_key.txt"
-installation_token_file = "installation_token.txt"
-session_token_file = "session_token.txt"
-
-# 1 to log http calls, 2 to include headers
-log_level = 0
-
-# IP to limit device-server to
-single_ip = False
 
 # Pagination
 older_url = None
@@ -31,69 +19,39 @@ older_url = None
 
 # -----------------------------------------------------------------------------
 
-def fname_to_path(fname):
-    dname = os.path.dirname(sys.argv[0])
-    return os.path.join(dname, fname)
+def clear_state():
+    state.set("private_key", "")
+    state.set("private_key_for_api_token", "")
+    state.set("installation_token", "")
+    state.set("device_registered", "")
+    state.set("session_token", "")
 
 
-def read_file(fname):
-    fn = fname_to_path(fname)
-    if os.path.isfile(fn):
-        with open(fn, 'r') as f:
-            return f.read()
+def check_api_token():
+    for_api_token = state.get("private_key_for_api_token")
+    if for_api_token and for_api_token != get_api_token():
+        print("New API token, clearing dependent keys and tokens...")
+        clear_state()
 
-
-def write_file(fname, data):
-    with open(fname_to_path(fname), 'w') as f:
-        f.write(data)
-
-
-def delete_file(fname):
-    fn = fname_to_path(fname)
-    if os.path.isfile(fn):
-        print("Deleting file {0}...".format(fname))
-        os.unlink(fn)
-
-
-def get_modification_time(fname):
-    fn = fname_to_path(fname)
-    if os.path.isfile(fn):
-        return os.path.getmtime(fn)
-
-
-def delete_old(fname, depends_on_fnames):
-    my_time = get_modification_time(fname)
-    if not my_time:
-        return
-    for depends_on in depends_on_fnames:
-        their_time = get_modification_time(depends_on)
-        if their_time and my_time < their_time:
-            print("File {0} should not be older than {1}, removing...".format(
-                fname, depends_on))
-            delete_file(fname)
-            return
-
-
-# -----------------------------------------------------------------------------
 
 def get_api_token():
-    token = read_file(api_token_file)
-    if token:
-        return token.rstrip("\r\n")
-    raise Exception("BUNQ API key not found.  Add an API key " +
-                    "using the app and store it in " + api_token_file)
+    token = config.get("api_token")
+    if not token or token == "enter bunq api key here":
+        raise Exception("BUNQ API key not found.  Create an API key " +
+                        "using the bunq and store it in " + config.config_fn)
+    return token
 
 
 def get_private_key():
-    delete_old(private_key_file, [api_token_file])
-    pem_str = read_file(private_key_file)
+    pem_str = state.get("private_key")
     if pem_str:
         return crypto.load_privatekey(crypto.FILETYPE_PEM, pem_str)
     print("Generating new private key...")
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 2048)
     pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    write_file(private_key_file, pem.decode("utf-8"))
+    state.set("private_key", pem.decode("utf-8"))
+    state.set("private_key_for_api_token", get_api_token())
     return key
 
 
@@ -104,10 +62,9 @@ def get_public_key():
 
 
 def get_installation_token():
-    delete_old(installation_token_file, [api_token_file, private_key_file])
-    token = read_file(installation_token_file)
+    token = state.get("installation_token")
     if token:
-        return token.rstrip("\r\n")
+        return token
     print("Requesting installation token...")
     public_key = get_public_key()
     pem = crypto.dump_publickey(crypto.FILETYPE_PEM, public_key)
@@ -116,20 +73,18 @@ def get_installation_token():
         "client_public_key": pem.decode("utf-8")
     }
     reply = post(method, data)
-    installation_token = None
+    token = None
     for row in reply:
         if "Token" in row:
-            installation_token = row["Token"]["token"]
-    if not installation_token:
+            token = row["Token"]["token"]
+    if not token:
         raise Exception("No token returned by installation")
-    write_file(installation_token_file, installation_token)
-    register_device()
-    return installation_token
+    state.set("installation_token", token)
 
 
 def register_device():
     permitted_ips = ['*']
-    if single_ip:
+    if config.get("single_ip"):
         permitted_ips = [network.get_public_ip()]
     print("Registering permitted IPs {}".format(",".join(permitted_ips)))
     method = "v1/device-server"
@@ -139,14 +94,18 @@ def register_device():
         "permitted_ips": permitted_ips
     }
     post(method, data)
+    state.set("device_registered", "True")
 
 
 def get_session_token():
-    delete_old(session_token_file, [api_token_file, private_key_file,
-               installation_token_file])
-    token = read_file(session_token_file)
+    check_api_token()
+    token = state.get("session_token")
     if token:
-        return token.rstrip("\r\n")
+        return token
+    if not state.get("installation_token"):
+        get_installation_token()
+    if not state.get("device_registered"):
+        register_device()
     print("Requesting session token...")
     method = "v1/session-server"
     data = {
@@ -159,7 +118,7 @@ def get_session_token():
             session_token = row["Token"]["token"]
     if not session_token:
         raise Exception("No token returned by session-server")
-    write_file(session_token_file, session_token)
+    state.set("session_token", session_token)
     return session_token
 
 
@@ -186,11 +145,11 @@ def sign(action, method, headers, data):
 # -----------------------------------------------------------------------------
 
 def log_request(action, method, headers, data):
-    if log_level < 1:
+    if not config.get("verbose"):
         return
     print("******************************")
     print("{0} {1}".format(action, method))
-    if log_level > 1:
+    if config.get("verboseverbose"):
         for k, v in headers.items():
             print("  {0}: {1}".format(k, v))
     if data:
@@ -200,10 +159,10 @@ def log_request(action, method, headers, data):
 
 
 def log_reply(reply):
-    if log_level < 1:
+    if not config.get("verbose"):
         return
     print("Status: {0}".format(reply.status_code))
-    if log_level > 1:
+    if config.get("verboseverbose"):
         for k, v in reply.headers.items():
             print("  {0}: {1}".format(k, v))
     print("----------")
@@ -243,7 +202,7 @@ def call(action, method, data=None):
     if ("Error" in result and
             result["Error"][0]["error_description"]
             == "Insufficient authorisation."):
-        delete_file(session_token_file)
+        set("session_token", "")
         result = call_requests(action, method, data)
         if isinstance(result, str):
             return result
@@ -255,16 +214,6 @@ def call(action, method, data=None):
 
 
 # -----------------------------------------------------------------------------
-
-def set_single_ip(value):
-    global single_ip
-    single_ip = value
-
-
-def set_log_level(level):
-    global log_level
-    log_level = level
-
 
 def get(method):
     return call('GET', method)
