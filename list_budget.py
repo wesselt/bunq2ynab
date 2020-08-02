@@ -1,4 +1,3 @@
-import argparse
 from decimal import Decimal
 
 from lib import ynab

@@ -1,6 +1,4 @@
-import argparse
 from decimal import Decimal
-import sys
 
 from lib import bunq
 from lib.config import config

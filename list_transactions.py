@@ -1,13 +1,12 @@
-import argparse
 from decimal import Decimal
 
 from lib import ynab
 from lib.config import config
 
 
-config.parser.add_argument("ynab_budget_name",
+config.parser.add_argument("ynab_budget_name", nargs="?",
     help="YNAB budget name (retrieve using 'python3 list_budget.py')")
-config.parser.add_argument("ynab_account_name",
+config.parser.add_argument("ynab_account_name", nargs="?",
     help="YNAB account name (retrieve using 'python3 list_budget.py')")
 config.load()
 
