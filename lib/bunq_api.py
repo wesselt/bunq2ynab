@@ -21,8 +21,9 @@ def get_account_id(user_id, account_name):
     for entry in reply:
         account_type = next(iter(entry))
         account = entry[account_type]
-        if (account["description"].casefold() == account_name.casefold() or
-                str(account["id"]) == account_name):
+        if (account["status"] == "ACTIVE" and
+            (account["description"].casefold() == account_name.casefold() or
+                str(account["id"]) == account_name)):
             return str(account["id"])
     raise Exception("BUNQ account '{0}' not found".format(account_name))
 

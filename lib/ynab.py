@@ -5,41 +5,32 @@ import requests
 import uuid
 import sys
 
-url = 'https://api.youneedabudget.com/'
-personal_access_token_file = "personal_access_token.txt"
+from lib.config import config
 
-# 1 to log http calls, 2 to include headers
-log_level = 0
+
+url = 'https://api.youneedabudget.com/'
 
 
 # -----------------------------------------------------------------------------
 
-def read_file(fname):
-    dname = os.path.dirname(sys.argv[0])
-    fn = os.path.join(dname, fname)
-    if os.path.isfile(fn):
-        with open(fn, 'r') as f:
-            return f.read()
-
-
 def get_personal_access_token():
-    token = read_file(personal_access_token_file)
-    if token:
-        return token.rstrip("\r\n")
+    token = config.get("personal_access_token")
+    if token and token != "enter ynab token here":
+        return token
     raise Exception(
         "Couldn't read YNAB personal access token.  Get one " +
         "from YNAB's developer settings and store it in " +
-        personal_access_token_file)
+        config.config_fn)
 
 
 # -----------------------------------------------------------------------------
 
 def log_request(action, method, headers, data):
-    if log_level < 1:
+    if not config.get("verbose"):
         return
     print("******************************")
     print("{0} {1}".format(action, method))
-    if log_level > 1:
+    if config.get("verboseverbose"):
         for k, v in headers.items():
             print("  {0}: {1}".format(k, v))
     if data:
@@ -49,10 +40,10 @@ def log_request(action, method, headers, data):
 
 
 def log_reply(reply):
-    if log_level < 1:
+    if not config.get("verbose"):
         return
     print("Status: {0}".format(reply.status_code))
-    if log_level > 1:
+    if config.get("verboseverbose"):
         for k, v in reply.headers.items():
             print("  {0}: {1}".format(k, v))
     print("----------")
