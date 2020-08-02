@@ -103,7 +103,9 @@ def extend_transactions(transactions, payments, ynab_account_id):
             transaction["payment"] = p
         else:
             # YNAB payee is max 50 chars 
-            iban_descr = " ({})".format(p["iban"])
+            iban_descr = ""
+            if p["iban"]:
+                iban_descr = " (" + p["iban"] + ")"
             payee_descr = p["payee"][:50-len(iban_descr)] + iban_descr
             transactions.append({
                 "import_id": import_id,
