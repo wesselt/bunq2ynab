@@ -1,19 +1,15 @@
-import argparse
-import json
-import sys
-
 from lib import bunq
 from lib import bunq_api
 from lib.config import config
 
 
-config.parser.add_argument("bunq_user_name",
+config.parser.add_argument("bunq_user_name", nargs="?",
     help="Bunq user name (retrieve using 'python3 list_user.py')")
 config.parser.add_argument("bunq_account_name", nargs='?',
     help="Bunq account name (retrieve using 'python3 list_user.py')")
-config.parser.add_argument("toggle_category",
+config.parser.add_argument("toggle_category", nargs='?',
     help="Callback category to toggle (f.e. MUTATION)")
-config.parser.add_argument("toggle_url",
+config.parser.add_argument("toggle_url", nargs='?',
     help="URL to receive the callback (f.e. https://yourdomain.com:12345)")
 config.load()
 

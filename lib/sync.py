@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from lib import ynab
 from lib import bunq_api
+from lib.config import config
 
 
 def strip_descr(descr):
@@ -127,10 +128,10 @@ def extend_transactions(transactions, payments, ynab_account_id):
 # -----------------------------------------------------------------------------
 
 def synchronize(bunq_user_id, bunq_account_id,
-                ynab_budget_id, ynab_account_id,
-                sync_all=False):
+                ynab_budget_id, ynab_account_id):
 
-    if sync_all:
+    get_all = config.get("all", False)
+    if get_all:
         start_dt = "2000-01-01"
     else:
         dt = datetime.datetime.now() - datetime.timedelta(days=35)
@@ -142,12 +143,13 @@ def synchronize(bunq_user_id, bunq_account_id,
     print("Retrieved {} ynab transactions...".format(len(transactions)))
 
     # Push start date back to latest YNAB entry
-    if transactions and not sync_all:
-        last_transaction_dt = transactions[-1]["date"]
-        if last_transaction_dt < start_dt:
-            start_dt = last_transaction_dt
-    else:
-        start_dt = "2000-01-01"
+    if not get_all:
+        if not transactions:
+            start_dt = "2000-01-01"
+        else:
+            last_transaction_dt = transactions[-1]["date"]
+            if last_transaction_dt < start_dt:
+                start_dt = last_transaction_dt
 
     print("Reading bunq payments from {}...".format(start_dt))
     payments = bunq_api.get_payments(bunq_user_id, bunq_account_id, start_dt)

@@ -28,7 +28,7 @@ class Config:
                 "instead of a wildcard for all IPs.")
         self.parser.add_argument("-e", "--environment",
             action="store_const", const=True,
-            help="Use environment instead of config.json to store tokens")
+            help="Use environment instead of state.json to store tokens")
         self.parser.add_argument("--api-token",
             action="store", help=argparse.SUPPRESS)
         self.parser.add_argument("--personal-access-token",
@@ -48,11 +48,13 @@ class Config:
                 self.config[name] = json_config.get(name)
 
 
-    def get(self, name):
+    def get(self, name, default=None):
         if not self.config:
             raise Exception("Load config before using it")
         if name in self.config:
             return self.config[name]
+        if default is not None:
+            return default
         raise Exception("Configuration {} not found".format(name))
 
 

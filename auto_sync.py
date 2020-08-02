@@ -1,4 +1,3 @@
-import argparse
 import errno
 import socket
 import time
@@ -8,6 +7,7 @@ from lib import bunq_api
 from lib import network
 from lib import sync
 from lib import ynab
+from lib.config import config
 
 
 # ----- Parameters
@@ -18,28 +18,18 @@ refresh_nocallback_minutes = 60
 
 # ----- Parse command line arguments
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-v", action="store_true",
-    help="Show content of JSON messages")
-parser.add_argument("-vv", action="store_true",
-    help="Show JSON messages and HTTP headers")
-parser.add_argument("--single-ip", action="store_true",
-    help="Register BUNQ device-server with a single IP address instead " +
-         "of a wildcard for all IPs.  Useful if you have a fixed IP.")
-parser.add_argument("--port", type=int,
+config.parser.add_argument("--port", type=int,
     help="TCP port number to listen to.  Default is a random port.")
-parser.add_argument("bunq_user_name",
+config.parser.add_argument("bunq_user_name", nargs="?",
     help="Bunq user name (retrieve using 'python3 list_user.py')")
-parser.add_argument("bunq_account_name",
+config.parser.add_argument("bunq_account_name", nargs="?",
     help="Bunq account name (retrieve using 'python3 list_user.py')")
-parser.add_argument("ynab_budget_name",
+config.parser.add_argument("ynab_budget_name", nargs="?",
     help="YNAB user name (retrieve using 'python3 list_budget.py')")
-parser.add_argument("ynab_account_name",
+config.parser.add_argument("ynab_account_name", nargs="?",
     help="YNAB account name (retrieve using 'python3 list_budget.py')")
-args = parser.parse_args()
-log_level = 2 if args.vv else 1 if args.v else 0
-bunq.set_log_level(log_level)
-bunq.set_single_ip(args.single_ip)
+config.load()
+
 
 bunq_user_id = None
 bunq_account_id = None
@@ -70,6 +60,10 @@ def remove_callback():
 
 
 def set_autosync_callbacks(new_nfs):
+    if not bunq_user_id or not bunq_user_id:
+        print("Can't change callbacks without user and account id.")
+        return
+
     old_nfs = bunq_api.get_callbacks(bunq_user_id, bunq_account_id)
     for nfi in old_nfs:
         for nf in nfi.values():
@@ -101,9 +95,10 @@ def synchronize():
 
 def bind_port():
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if args.port:
-        serversocket.bind(('0.0.0.0', args.port))
-        return serversocket, args.port
+    port = config.get("port")
+    if port:
+        serversocket.bind(('0.0.0.0', int(port)))
+        return serversocket, int(port)
     port = None
     for i in range(0, 128):
         port = network.next_port(port)
@@ -138,15 +133,15 @@ def setup_callback():
         callback_ip = portmap_ip
 
     if not bunq_user_id:
-        bunq_user_id = bunq_api.get_user_id(args.bunq_user_name)
+        bunq_user_id = bunq_api.get_user_id(config.get("bunq_user_name"))
     if not bunq_account_id:
         bunq_account_id = bunq_api.get_account_id(bunq_user_id,
-                                                        args.bunq_account_name)
+                                               config.get("bunq_account_name"))
     if not ynab_budget_id:
-        ynab_budget_id = ynab.get_budget_id(args.ynab_budget_name)
+        ynab_budget_id = ynab.get_budget_id(config.get("ynab_budget_name"))
     if not ynab_account_id:
         ynab_account_id = ynab.get_account_id(ynab_budget_id,
-                                                        args.ynab_account_name)
+                                               config.get("ynab_account_name"))
 
     if not callback_ip:
         print("No public IP found, not registering callback.")

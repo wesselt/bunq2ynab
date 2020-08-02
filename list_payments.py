@@ -1,4 +1,3 @@
-import argparse
 import json
 import sys
 
@@ -7,9 +6,9 @@ from lib import bunq_api
 from lib.config import config
 
 
-config.parser.add_argument("bunq_user_name",
+config.parser.add_argument("bunq_user_name", nargs="?",
     help="Bunq user name (retrieve using 'python3 list_user.py')")
-config.parser.add_argument("bunq_account_name",
+config.parser.add_argument("bunq_account_name", nargs="?",
     help="Bunq account name (retrieve using 'python3 list_user.py')")
 config.load()
 
