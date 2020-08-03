@@ -128,7 +128,7 @@ def chunker(seq, size):
 
 def upload_transactions(budget_id, transactions):
     method = "v1/budgets/" + budget_id + "/transactions"
-    reversed_transactions = reversed(transactions)
+    reversed_transactions = list(reversed(transactions))
 
     new_list = [t for t in reversed_transactions if t.get("new")]
     for new_batch in chunker(new_list, 100):
