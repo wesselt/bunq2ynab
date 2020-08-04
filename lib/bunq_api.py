@@ -27,21 +27,24 @@ def first_value(data):
     return next(iter(data.values()))
 
 
-def get_users():
-    return [{
-        "id": u["id"],
-        "name": u["display_name"],
-        "accounts": [{
-            "id": a["id"],
-            "name": a["description"],
-            "iban": [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0],
-        } for a
-          in [first_value(a) for a in
-                       bunq.get("v1/user/{}/monetary-account".format(u["id"]))]
-          if a["status"] == "ACTIVE"]
-    } for u
-      in [first_value(u) for u in bunq.get("v1/user")]
-      if u["status"] == "ACTIVE"]
+def get_accounts_for_user(u):
+    method = "v1/user/{}/monetary-account".format(u["id"])
+    for a in [first_value(a) for a in bunq.get(method)]:
+        if a["status"] == "ACTIVE":
+            iban = [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0]
+            yield {
+                "bunq_user_id": u["id"],
+                "bunq_user_name": u["display_name"],
+                "bunq_account_id": a["id"],
+                "bunq_account_name": a["description"],
+                "iban": iban
+            }
+
+
+def get_accounts():
+    for u in [first_value(u) for u in bunq.get("v1/user")]:
+        if u["status"] == "ACTIVE":
+            yield from get_accounts_for_user(u)
 
 
 def get_callbacks(user_id, account_id):

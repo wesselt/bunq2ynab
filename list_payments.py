@@ -6,9 +6,9 @@ from lib import bunq_api
 from lib.config import config
 
 
-config.parser.add_argument("bunq_user_name", nargs="?",
+config.parser.add_argument("bunq_user_name",
     help="Bunq user name (retrieve using 'python3 list_user.py')")
-config.parser.add_argument("bunq_account_name", nargs="?",
+config.parser.add_argument("bunq_account_name",
     help="Bunq account name (retrieve using 'python3 list_user.py')")
 config.load()
 

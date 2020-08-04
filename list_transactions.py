@@ -4,9 +4,9 @@ from lib import ynab
 from lib.config import config
 
 
-config.parser.add_argument("ynab_budget_name", nargs="?",
+config.parser.add_argument("ynab_budget_name",
     help="YNAB budget name (retrieve using 'python3 list_budget.py')")
-config.parser.add_argument("ynab_account_name", nargs="?",
+config.parser.add_argument("ynab_account_name",
     help="YNAB account name (retrieve using 'python3 list_budget.py')")
 config.load()
 
