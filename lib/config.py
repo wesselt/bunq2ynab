@@ -40,7 +40,11 @@ class Config:
 
 
     def __getitem__(self, name):
-        return self.get(name)
+        if not self.config:
+            raise Exception("Load config before using it")
+        if not name in self.config:
+            raise Exception("Unknown configuration \"{}\"".format(name))
+        return self.config[name]
 
 
     def get(self, name, default=None):

@@ -95,17 +95,18 @@ def get_account_id(budget_id, account_name):
     raise Exception("YNAB account '{0}' not found".format(account_name))
 
 
-def get_budgets():
+def get_accounts():
     result = get("v1/budgets?include_accounts=true")
-    return [{
-            "budget_id": b["id"],
-            "budget_name": b["name"],
-            "accounts": [{
-                "account_id": a["id"],
-                "account_name": a["name"],
-                "transfer_payee_id": a["transfer_payee_id"]
-            } for a in b["accounts"]]
-        } for b in result["budgets"]]
+    for b in result["budgets"]:
+        for a in b["accounts"]:
+            if not a["deleted"]:
+                yield {
+                    "ynab_budget_id": b["id"],
+                    "ynab_budget_name": b["name"],
+                    "ynab_account_id": a["id"],
+                    "ynab_account_name": a["name"],
+                    "transfer_payee_id": a["transfer_payee_id"]
+                } 
 
 
 def get_transactions(budget_id, account_id, start_date):
