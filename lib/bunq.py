@@ -27,19 +27,11 @@ def clear_state():
     state.set("session_token", "")
 
 
-def check_api_token():
+def check_stale_api_token():
     for_api_token = state.get("private_key_for_api_token")
-    if for_api_token and for_api_token != get_api_token():
+    if for_api_token and for_api_token != config.get("api_token"):
         print("New API token, clearing dependent keys and tokens...")
         clear_state()
-
-
-def get_api_token():
-    token = config.get("api_token")
-    if not token or token == "enter bunq api key here":
-        raise Exception("BUNQ API key not found.  Create an API key " +
-                        "using the bunq and store it in " + config.config_fn)
-    return token
 
 
 def get_private_key():
@@ -51,7 +43,7 @@ def get_private_key():
     key.generate_key(crypto.TYPE_RSA, 2048)
     pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
     state.set("private_key", pem.decode("utf-8"))
-    state.set("private_key_for_api_token", get_api_token())
+    state.set("private_key_for_api_token", config.get("api_token"))
     return key
 
 
@@ -90,7 +82,7 @@ def register_device():
     method = "v1/device-server"
     data = {
         "description": "bunq2ynab on " + network.get_hostname(),
-        "secret": get_api_token(),
+        "secret": config.get("api_token"),
         "permitted_ips": permitted_ips
     }
     post(method, data)
@@ -98,7 +90,7 @@ def register_device():
 
 
 def get_session_token():
-    check_api_token()
+    check_stale_api_token()
     token = state.get("session_token")
     if token:
         return token
@@ -109,7 +101,7 @@ def get_session_token():
     print("Requesting session token...")
     method = "v1/session-server"
     data = {
-        "secret": get_api_token()
+        "secret": config.get("api_token")
     }
     reply = post(method, data)
     session_token = None

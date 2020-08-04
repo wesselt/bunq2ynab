@@ -127,36 +127,53 @@ def extend_transactions(transactions, payments, ynab_account_id):
 
 # -----------------------------------------------------------------------------
 
-def synchronize(bunq_user_id, bunq_account_id,
-                ynab_budget_id, ynab_account_id):
+class Sync:
 
-    get_all = config.get("all", False)
-    if get_all:
-        start_dt = "2000-01-01"
-    else:
-        dt = datetime.datetime.now() - datetime.timedelta(days=35)
-        start_dt = dt.strftime("%Y-%m-%d")
+    def populate(self):
+        self.users = bunq_api.get_users()
+        self.budgets = ynab.get_budgets()
 
-    print("Reading ynab transactions from {}...".format(start_dt))
-    transactions = ynab.get_transactions(ynab_budget_id, ynab_account_id,
-                                         start_dt)
-    print("Retrieved {} ynab transactions...".format(len(transactions)))
 
-    # Push start date back to latest YNAB entry
-    if not get_all:
-        if not transactions:
+    def synchronize_account(self, bunq_user_id, bunq_account_id,
+                            ynab_budget_id, ynab_account_id):
+
+        print("Sync account: {}".format(bunq_account_id))
+        return
+
+        get_all = config.get("all", False)
+        if get_all:
             start_dt = "2000-01-01"
         else:
-            last_transaction_dt = transactions[-1]["date"]
-            if last_transaction_dt < start_dt:
-                start_dt = last_transaction_dt
+            dt = datetime.datetime.now() - datetime.timedelta(days=35)
+            start_dt = dt.strftime("%Y-%m-%d")
 
-    print("Reading bunq payments from {}...".format(start_dt))
-    payments = bunq_api.get_payments(bunq_user_id, bunq_account_id, start_dt)
-    print("Retrieved {} bunq payments...".format(len(payments)))
+        print("Reading ynab transactions from {}...".format(start_dt))
+        transactions = ynab.get_transactions(ynab_budget_id, ynab_account_id,
+                                             start_dt)
+        print("Retrieved {} ynab transactions...".format(len(transactions)))
 
-    extend_transactions(transactions, payments, ynab_account_id)
+        # Push start date back to latest YNAB entry
+        if not get_all:
+            if not transactions:
+                start_dt = "2000-01-01"
+            else:
+                last_transaction_dt = transactions[-1]["date"]
+                if last_transaction_dt < start_dt:
+                    start_dt = last_transaction_dt
 
-    created, patched = ynab.upload_transactions(ynab_budget_id, transactions)
-    print("Created {} and patched {} transactions.".format(
-        created, patched))
+        print("Reading bunq payments from {}...".format(start_dt))
+        payments = bunq_api.get_payments(bunq_user_id, bunq_account_id, start_dt)
+        print("Retrieved {} bunq payments...".format(len(payments)))
+
+        extend_transactions(transactions, payments, ynab_account_id)
+
+        created, patched = ynab.upload_transactions(ynab_budget_id, transactions)
+        print("Created {} and patched {} transactions.".format(
+            created, patched))
+
+
+    def synchronize(self):
+        self.populate()
+
+
+sync = Sync()

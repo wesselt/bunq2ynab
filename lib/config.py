@@ -1,11 +1,10 @@
 import argparse
 import json
 import os
+import sys
 
 from lib import helpers
 
-
-# -----------------------------------------------------------------------------
 
 class Config:
     config_fn = helpers.fname_to_path("config.json")
@@ -29,33 +28,25 @@ class Config:
         self.parser.add_argument("-e", "--environment",
             action="store_const", const=True,
             help="Use environment instead of state.json to store tokens")
-        self.parser.add_argument("--api-token",
-            action="store", help=argparse.SUPPRESS)
-        self.parser.add_argument("--personal-access-token",
-            action="store", help=argparse.SUPPRESS)
 
 
     def load(self):
+        self.read_json_config()
+
+        # Add command line settings
         args = self.parser.parse_args()
-        self.config = vars(args)
+        for k, v in vars(args).items():
+            self.config[k] = v
 
-        json_config = self.read_json_config()
 
-        for name in self.config:
-            if self.config[name] is None:
-                self.config[name] = helpers.get_environment(name)
-            if self.config[name] is None:
-                self.config[name] = json_config.get(name)
+    def __getitem__(self, name):
+        return self.get(name)
 
 
     def get(self, name, default=None):
         if not self.config:
             raise Exception("Load config before using it")
-        if name in self.config:
-            return self.config[name]
-        if default is not None:
-            return default
-        raise Exception("Configuration {} not found".format(name))
+        return self.config.get(name, default)
 
 
     def read_json_config(self):
@@ -66,9 +57,17 @@ class Config:
             }
             with open(self.config_fn, "w") as f:
                 json.dump(example_config, f, indent=4)
+            print("Missing configuration.  Created an example, please " +
+                  "edit and update config.json.")
+            sys.exit(1)
 
         with open(self.config_fn) as f:
-            return json.load(f)
+            self.config = json.load(f)
+
+        if (self.config["api_token"] == "enter bunq api key here" or
+            self.config["personal_access_token"] == "enter ynab token here"):
+            print("Missing configuration, please edit and update config.json.")
+            sys.exit(1)
 
 
 config = Config()
