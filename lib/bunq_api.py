@@ -10,12 +10,6 @@ def get_user_id(user_name):
     raise Exception("BUNQ user '{0}' not found".format(user_name))
 
 
-def get_account_type(user_id, account_id):
-    reply = bunq.get('v1/user/{0}/monetary-account/{1}'.format(
-                     user_id, account_id))
-    return next(iter(reply[0]))
-
-
 def get_account_id(user_id, account_name):
     reply = bunq.get('v1/user/{0}/monetary-account'.format(user_id))
     for entry in reply:
@@ -26,6 +20,28 @@ def get_account_id(user_id, account_name):
                 str(account["id"]) == account_name)):
             return str(account["id"])
     raise Exception("BUNQ account '{0}' not found".format(account_name))
+
+
+# {"UserPerson": {...}}   -->   {...}
+def first_value(data):
+    return next(iter(data.values()))
+
+
+def get_users():
+    return [{
+        "id": u["id"],
+        "name": u["display_name"],
+        "accounts": [{
+            "id": a["id"],
+            "name": a["description"],
+            "iban": [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0],
+        } for a
+          in [first_value(a) for a in
+                       bunq.get("v1/user/{}/monetary-account".format(u["id"]))]
+          if a["status"] == "ACTIVE"]
+    } for u
+      in [first_value(u) for u in bunq.get("v1/user")]
+      if u["status"] == "ACTIVE"]
 
 
 def get_callbacks(user_id, account_id):

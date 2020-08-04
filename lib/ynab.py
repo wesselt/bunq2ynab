@@ -13,18 +13,6 @@ url = 'https://api.youneedabudget.com/'
 
 # -----------------------------------------------------------------------------
 
-def get_personal_access_token():
-    token = config.get("personal_access_token")
-    if token and token != "enter ynab token here":
-        return token
-    raise Exception(
-        "Couldn't read YNAB personal access token.  Get one " +
-        "from YNAB's developer settings and store it in " +
-        config.config_fn)
-
-
-# -----------------------------------------------------------------------------
-
 def log_request(action, method, headers, data):
     if not config.get("verbose"):
         return
@@ -57,7 +45,7 @@ def log_reply(reply):
 def call(action, method, data_obj=None):
     data = json.dumps(data_obj) if data_obj else ''
     headers = {
-        'Authorization': 'Bearer ' + get_personal_access_token(),
+        'Authorization': 'Bearer ' + config.get("personal_access_token"),
         'Content-type': 'application/json'
     }
     log_request(action, method, headers, data_obj)
@@ -105,6 +93,19 @@ def get_account_id(budget_id, account_name):
         if a["name"].casefold() == account_name.casefold():
             return a["id"]
     raise Exception("YNAB account '{0}' not found".format(account_name))
+
+
+def get_budgets():
+    result = get("v1/budgets?include_accounts=true")
+    return [{
+            "budget_id": b["id"],
+            "budget_name": b["name"],
+            "accounts": [{
+                "account_id": a["id"],
+                "account_name": a["name"],
+                "transfer_payee_id": a["transfer_payee_id"]
+            } for a in b["accounts"]]
+        } for b in result["budgets"]]
 
 
 def get_transactions(budget_id, account_id, start_date):
