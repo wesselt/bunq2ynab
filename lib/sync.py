@@ -7,6 +7,44 @@ from lib import zerofx
 from lib.config import config
 
 
+def pair_to_str(pair):
+    return '"{}" - "{}" to "{}" - "{}"'.format(
+        pair["bunq_user_name"],
+        pair["bunq_account_name"],
+        pair["ynab_budget_name"],
+        pair["ynab_account_name"])
+
+
+def key_fail(key, conf, account):
+    return (conf[key] != "*" and
+       conf[key].casefold() != account[key].casefold()) 
+
+
+def matching_pairs(bunq, ynab, conf):
+    if (key_fail("bunq_user_name", conf, bunq) or
+            key_fail("bunq_account_name", conf, bunq) or
+            key_fail("ynab_budget_name", conf, ynab) or
+            key_fail("ynab_account_name", conf, ynab)):
+        return False
+
+    # IF either account is *, th names must match
+    if (conf["bunq_account_name"] == "*" or
+            conf["ynab_account_name"] == "*"):
+        if (bunq["bunq_account_name"].casefold() !=
+                ynab["ynab_account_name"].casefold()):
+            return False
+
+    conf["matched"] = True
+    return True
+
+
+def get_last_transaction_date(transactions):
+    l = [t for t in transactions if t["payee_name"] != "Starting Balance"]
+    if not l:
+        return "2000-01-01"
+    return l[-1]["date"]
+
+ 
 class Sync:
 
     def __init__(self):
@@ -18,51 +56,38 @@ class Sync:
         self.bunq_accounts = list(bunq_api.get_accounts())
         print("Retrieving ynab accounts...")
         self.ynab_accounts = list(ynab.get_accounts())
-        self.confpairs = config.get("accounts", [])
-        if not self.confpairs:
-            for ba in self.bunq_accounts:
-                yas = [a for a in self.ynab_accounts
-                       if a["ynab_account_name"] == ba["bunq_account_name"]]
-                if len(yas) == 1:
-                    print("Auto matched account {}...".format(
-                                                      ba["bunq_account_name"]))
-                    self.confpairs.append({**ba, **yas[0]})
-        self.syncpairs = [self.confpair_to_syncpair(confpair) for
-            confpair in self.confpairs]
 
-    
-    def find_by_confpair(self, arr, prefix, confpair):
-        name = confpair[prefix + "_name"]
-        for entry in arr:
-            if (entry[prefix + "_id"].casefold() == name.casefold() or
-                        entry[prefix + "_name"].casefold() == name.casefold()):
-                return entry
+        self.confpairs = config.get("accounts", [{}])
+        if not isinstance(self.confpairs, list):
+            raise Exception('Configuration "accounts" must be a list')
+        for conf in self.confpairs:
+            for k in conf:
+                if k not in ("bunq_user_name", "bunq_account_name",
+                             "ynab_budget_name", "ynab_account_name"):
+                    raise Exception("Accounts cannot contain {}".format(k))
+            if conf.get("bunq_user_name", "") == "":
+                conf["bunq_user_name"] = "*"
+            if conf.get("bunq_account_name", "") == "":
+                conf["bunq_account_name"] = "*"
+            if conf.get("ynab_budget_name", "") == "":
+                conf["ynab_budget_name"] = "*"
+            if conf.get("ynab_account_name", "") == "":
+                conf["ynab_account_name"] = "*"
 
+        self.syncpairs = [{**ba, **ya} 
+            for ba in self.bunq_accounts
+            for ya in self.ynab_accounts
+            if [True for cp in self.confpairs
+                if matching_pairs(ba, ya, cp)]]
 
-    def confpair_to_syncpair(self, confpair):
-        ynab_account = next((a for a in self.ynab_accounts
-            if a["ynab_account_name"].casefold() == 
-                               confpair["ynab_account_name"].casefold()), None)
-        if not ynab_account:
-            raise Exception('YNAB doesn\'t know budget "{}" account "{}"'
-                .format(confpair["ynab_budget_name"],
-                        confpair["ynab_account_name"]))
-
-        bunq_account = next((a for a in self.bunq_accounts
-            if a["bunq_account_name"].casefold() == 
-                               confpair["bunq_account_name"].casefold()), None)
-        if not ynab_account:
-            raise Exception('bunq doesn\'t know user "{}" account "{}"'
-                .format(confpair["bunq_user_name"],
-                        confpair["bunq_account_name"]))
-
-        # ** is the dictionary unpack operator
-        return {**ynab_account, **bunq_account}
+        for cp in self.confpairs:
+            if "matched" not in cp:
+                print("No matches for rule {}.".format(pair_to_str(cp)))
 
 
-     # Calculate occurernce for YNAB duplicate detection
+    # Calculate occurernce for YNAB duplicate detection
     def calculate_occurrence(self, same_day, p):
-        if len(same_day) > 0 and same_day[0]["date"] != p["date"]:
+        if same_day and same_day[0]["date"] != p["date"]:
             same_day.clear()
         same_day.append(p)
         return len([s for s in same_day if s["amount"] == p["amount"]])
@@ -109,11 +134,7 @@ class Sync:
 
 
     def synchronize_account(self, syncpair):
-        print('Synching "{}" - "{}" to "{}" - "{}"...'.format(
-            syncpair["bunq_user_name"],
-            syncpair["bunq_account_name"],
-            syncpair["ynab_budget_name"],
-            syncpair["ynab_account_name"]))
+        print("Synching {}...".format(pair_to_str(syncpair)))
 
         get_all = config.get("all", False)
         if get_all:
@@ -129,12 +150,7 @@ class Sync:
 
         # Push start date back to latest YNAB entry
         if not get_all:
-            if not transactions:
-                start_dt = "2000-01-01"
-            else:
-                last_transaction_dt = transactions[-1]["date"]
-                if last_transaction_dt < start_dt:
-                    start_dt = last_transaction_dt
+            start_dt = min(start_dt, get_last_transaction_date(transactions))
 
         print("Reading bunq payments from {}...".format(start_dt))
         payments = bunq_api.get_payments(syncpair["bunq_user_id"],
