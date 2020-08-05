@@ -143,7 +143,7 @@ def upload_transactions(budget_id, transactions):
     for patch_batch in chunker(patch_list, 100):
         print("Patching transactions up to {}..."
               .format(patch_batch[-1]["date"]))
-        patch_result, patch(method, {"transactions": patch_batch})
+        patch_result = patch(method, {"transactions": patch_batch})
         patched += len(patch_result["transaction_ids"])
 
     return created, duplicates, patched
