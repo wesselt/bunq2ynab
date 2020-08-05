@@ -110,9 +110,10 @@ class Sync:
                        t["amount"] == milliunits and
                        t["date"] == p["date"] and
                        t["payee_id"] == transfer_to["transfer_payee_id"] and
-                       t["payee_name"] is not None  # Not already matched
+                       t.get("matched_transfer", "") == ""  # Not yet matched
                     ), None)
                 if transaction:
+                    transaction["matched_transfer"] = True
                     del transaction["payee_name"]  # Can't save transfer name
                     print("Matched existing tranfer: {} {} {}...".format(
                         p["amount"], p["date"],
