@@ -18,8 +18,9 @@ ynab_account_id = ynab.get_account_id(ynab_budget_id,
 
 
 def print_transaction(t):
-    print("{0}  {1:10,}  {2:<50} > {3}".format(
-        t["date"], Decimal(t["amount"]), t["payee_name"], t["category_name"]))
+    print("{0}  {1:10,}  {2:<25}  {3:<50} > {4}".format(
+        t["date"], Decimal(t["amount"]), t["import_id"] or "", t["payee_name"],
+        t["category_name"]))
 
 
 result = ynab.get("v1/budgets/{0}/accounts/{1}/transactions".format(

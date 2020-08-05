@@ -128,21 +128,25 @@ def chunker(seq, size):
 def upload_transactions(budget_id, transactions):
     method = "v1/budgets/" + budget_id + "/transactions"
     reversed_transactions = list(reversed(transactions))
+    created = duplicates = patched = 0
 
     new_list = [t for t in reversed_transactions if t.get("new")]
     for new_batch in chunker(new_list, 100):
         print("Creating transactions up to {}..."
               .format(new_batch[-1]["date"]))
-        post(method, {"transactions": new_batch})
+        new_result = post(method, {"transactions": new_batch})
+        created += len(new_result["transaction_ids"])
+        duplicates += len(new_result["duplicate_import_ids"])
 
     patch_list = [t for t in reversed_transactions
                   if not t.get("new") and t.get("dirty")]
     for patch_batch in chunker(patch_list, 100):
         print("Patching transactions up to {}..."
               .format(patch_batch[-1]["date"]))
-        patch(method, {"transactions": patch_batch})
+        patch_result, patch(method, {"transactions": patch_batch})
+        patched += len(patch_result["transaction_ids"])
 
-    return len(new_list), len(patch_list)
+    return created, duplicates, patched
 
 
 # -----------------------------------------------------------------------------

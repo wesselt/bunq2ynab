@@ -101,8 +101,27 @@ class Sync:
             occurrence = self.calculate_occurrence(same_day, p)
             import_id = "YNAB:{}:{}:{}".format(milliunits, p["date"],
                                                                     occurrence)
-            print("{} {} {}".format(p["payee"], p["amount"], import_id))
+            transfer_to = next((sp for sp in self.syncpairs
+                                if sp["iban"] == p["iban"]), None)
             transaction = ynab.get(import_id)
+            if not transaction and transfer_to:   
+                transaction = next((t for t in transactions
+                    if t["import_id"] is None and
+                       t["amount"] == milliunits and
+                       t["date"] == p["date"] and
+                       t["payee_id"] == transfer_to["transfer_payee_id"] and
+                       t["payee_name"] is not None  # Not already matched
+                    ), None)
+                if transaction:
+                    del transaction["payee_name"]  # Can't save transfer name
+                    print("Matched existing tranfer: {} {} {}...".format(
+                        p["amount"], p["date"],
+                        transfer_to["bunq_account_name"])) 
+                else:
+                    print("New tranfer: {} {} {}...".format(
+                        p["amount"], p["date"],
+                        transfer_to["bunq_account_name"]))
+
             if transaction:
                 transaction["payment"] = p
             else:
@@ -117,11 +136,7 @@ class Sync:
                     "payment": p,
                     "new": True
                 }
-                transfer_to = next((sp for sp in self.syncpairs
-                                    if sp["iban"] == p["iban"]), None)
                 if transfer_to:
-                    print("Detected transfer to {}...".format(
-                        transfer_to["bunq_account_name"]))
                     new_trans["payee_id"] = transfer_to["transfer_payee_id"]
                 else:
                     iban_descr = ""
@@ -159,10 +174,13 @@ class Sync:
 
         self.extend_transactions(transactions, payments, syncpair)
         zerofx.merge(transactions)
-        #created, patched = ynab.upload_transactions(syncpair["ynab_budget_id"], 
-        #                                            transactions)
-        #print("Created {} and patched {} transactions."
-        #                                             .format(created, patched))
+
+        created, duplicates, patched = ynab.upload_transactions(
+            syncpair["ynab_budget_id"], transactions)
+        print("Created {} and patched {} transactions."
+              .format(created, patched))
+        if duplicates:
+            print("WARNING: there were {} duplicates.".format(duplicates))
 
 
     def synchronize(self):
