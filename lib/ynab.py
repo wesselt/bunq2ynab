@@ -112,14 +112,11 @@ def get_accounts():
 def get_transactions(budget_id, account_id, start_date):
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
         .format(budget_id, account_id, start_date))
-    transactions = [t for t in result["transactions"]
-        if t["payee_name"] != "Starting Balance"]
-    if transactions:
-        return transactions
+    if result["transactions"]:
+        return result["transactions"]
     result = get("v1/budgets/{0}/accounts/{1}/transactions"
         .format(budget_id, account_id))
-    return [t for t in result["transactions"]
-        if t["payee_name"] != "Starting Balance"]
+    return result["transactions"]
 
 
 # -----------------------------------------------------------------------------
