@@ -38,7 +38,7 @@ def find_corrected(transactions, reversal):
      ), None)
 
 
-def merge(original, reversal, corrected):
+def merge_triple(original, reversal, corrected):
     original_cat = original.get("category_id")
     if original_cat:
         if not reversal.get("category_id"):
@@ -71,4 +71,4 @@ def merge(transactions):
             corrected = find_corrected(transactions, reversal)
             if not corrected:
                 continue
-            merge(original, reversal, corrected)
+            merge_triple(original, reversal, corrected)
