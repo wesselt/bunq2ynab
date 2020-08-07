@@ -63,7 +63,12 @@ class Config:
         if not os.path.exists(self.config_fn):
             example_config = {
                 "api_token": "enter bunq api key here",
-                "personal_access_token": "enter ynab token here"
+                "personal_access_token": "enter ynab token here",
+                accounts: [{
+                    "bunq_account_name": "enter bunq account ere",
+                    "ynab_budget_name": "enter ynab budget here",
+                    "ynab_account_name": "enter ynab account here"
+                }]
             }
             with open(self.config_fn, "w") as f:
                 json.dump(example_config, f, indent=4)
@@ -71,8 +76,13 @@ class Config:
                 "edit " + self.config_fn)
             sys.exit(1)
 
-        with open(self.config_fn) as f:
-            self.config.update(json.load(f))
+        try:
+            with open(self.config_fn) as f:
+                self.config.update(json.load(f))
+        except Exception as e:
+            log.critical("Error loading configuration {}: {}"
+                         .format(self.config_fn, e))
+            sys.exit(1)
 
         if (self.config["api_token"] == "enter bunq api key here" or
             self.config["personal_access_token"] == "enter ynab token here"):
