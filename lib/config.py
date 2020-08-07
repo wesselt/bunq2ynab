@@ -67,7 +67,7 @@ class Config:
             example_config = {
                 "api_token": "enter bunq api key here",
                 "personal_access_token": "enter ynab token here",
-                accounts: [{
+                "accounts": [{
                     "bunq_account_name": "enter bunq account ere",
                     "ynab_budget_name": "enter ynab budget here",
                     "ynab_account_name": "enter ynab account here"
