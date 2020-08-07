@@ -67,7 +67,7 @@ class Sync:
             for k in conf:
                 if k not in ("bunq_user_name", "bunq_account_name",
                              "ynab_budget_name", "ynab_account_name"):
-                    raise Exception("Accounts cannot contain {}".format(k))
+                    raise Exception('Accounts cannot contain "{}"'.format(k))
             if conf.get("bunq_user_name", "") == "":
                 conf["bunq_user_name"] = "*"
             if conf.get("bunq_account_name", "") == "":
@@ -86,6 +86,8 @@ class Sync:
         for cp in self.confpairs:
             if "matched" not in cp:
                 log.warning("No matches for rule {}.".format(pair_to_str(cp)))
+            else:
+                del cp["matched"]
 
         self.populated = True
 
