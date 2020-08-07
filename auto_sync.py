@@ -8,6 +8,7 @@ from lib import bunq_api
 from lib import network
 from lib import sync
 from lib import ynab
+from lib import helpers
 from lib.config import config
 from lib.log import log
 
@@ -155,9 +156,9 @@ def wait_for_callback():
     next_refresh = time.time() + refresh_callback_minutes*60
     next_sync = next_refresh
     while time.time() < next_refresh:
-        time_left = min(next_sync, next_refresh) - time.time()
-        log.info("Waiting for callback for {} minutes...".format(
-              int(time_left/60)))
+        time_left = max(min(next_sync, next_refresh) - time.time(), 0)
+        log.info("Waiting for callback for {}...".format(
+              helpers.format_seconds(time_left)))
         serversocket.settimeout(time_left)
         try:
             (clientsocket, address) = serversocket.accept()
@@ -169,12 +170,12 @@ def wait_for_callback():
         except socket.timeout as e:
             pass
 
-        if last_sync + 30 < time.time():
+        if time.time() < last_sync + 30:
+            next_sync = last_sync + 30
+        else:
             synchronize()
             last_sync = time.time()
             next_sync = next_refresh
-        else:
-            next_sync = last_sync + 30
 
 
 def teardown_callback():
