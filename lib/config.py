@@ -36,6 +36,9 @@ class Config:
         elif args.log_level:
             log_module.set_log_level("--log-level argument", args.log_level)
 
+        if os.environ.get("LOG_LEVEL"):
+            log_module.set_log_level("environment", os.environ["LOG_LEVEL"])
+
         self.config = {}
         for k, v in vars(args).items():
             self.config[k] = v

@@ -31,10 +31,7 @@ def set_log_level(source, loglevel):
 
 
 log = logging.getLogger()
-if os.environ.get("LOG_LEVEL"):
-    set_log_level("environment variable", os.environ["LOG_LEVEL"])
-else:
-    log.setLevel(logging.INFO)
+log.setLevel(logging.INFO)
 log.propagate = False
 set_format("%(asctime)s | %(levelname)s | %(filename)s:%(lineno)d) " +
     "| %(message)s")
