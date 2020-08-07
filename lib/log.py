@@ -33,5 +33,5 @@ def set_log_level(source, loglevel):
 log = logging.getLogger()
 log.setLevel(logging.INFO)
 log.propagate = False
-set_format("%(asctime)s | %(levelname)s | %(filename)s:%(lineno)d) " +
+set_format("%(asctime)s | %(levelname)s | %(filename)s:%(lineno)d " +
     "| %(message)s")
