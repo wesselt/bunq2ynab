@@ -151,24 +151,30 @@ def setup_callback():
 
 
 def wait_for_callback():
+    last_sync = time.time()
     next_refresh = time.time() + refresh_callback_minutes*60
-    while True:
-        time_left = next_refresh - time.time()
-        if time_left < 1:
-            return
+    next_sync = next_refresh
+    while time.time() < next_refresh:
+        time_left = min(next_sync, next_refresh) - time.time()
+        log.info("Waiting for callback for {} minutes...".format(
+              int(time_left/60)))
+        serversocket.settimeout(time_left)
         try:
-            log.info("Waiting for callback for {} minutes...".format(
-                  int(time_left/60)))
-            serversocket.settimeout(time_left)
             (clientsocket, address) = serversocket.accept()
             clientsocket.close()
-            log.info("Incoming call from {}...".format(address[0]))
             if not network.is_bunq_server(address[0]):
-                log.info("Source IP not in BUNQ range")
-            else:
-                synchronize()
+                log.warning("Source IP not in BUNQ range".format(address[0]))
+                continue
+            log.info("Incoming call from {}...".format(address[0]))
         except socket.timeout as e:
-            return
+            pass
+
+        if last_sync + 30 < time.time():
+            synchronize()
+            last_sync = time.time()
+            next_sync = next_refresh
+        else:
+            next_sync = last_sync + 30
 
 
 def teardown_callback():
