@@ -6,6 +6,7 @@ import uuid
 import sys
 
 from lib.config import config
+from lib.log import log
 
 
 url = 'https://api.youneedabudget.com/'
@@ -14,32 +15,28 @@ url = 'https://api.youneedabudget.com/'
 # -----------------------------------------------------------------------------
 
 def log_request(action, method, headers, data):
-    if not config.get("verbose"):
-        return
-    print("******************************")
-    print("{0} {1}".format(action, method))
-    if config.get("verboseverbose"):
+    log.debug("******************************")
+    log.debug("{0} {1}".format(action, method))
+    if config.get("headers"):
         for k, v in headers.items():
-            print("  {0}: {1}".format(k, v))
+            log.debug("  {0}: {1}".format(k, v))
     if data:
-        print("-----")
-        print(json.dumps(data, indent=2))
-        print("-----")
+        log.debug("-----")
+        log.debug(json.dumps(data, indent=2))
+        log.debug("-----")
 
 
 def log_reply(reply):
-    if not config.get("verbose"):
-        return
-    print("Status: {0}".format(reply.status_code))
+    log.debug("Status: {0}".format(reply.status_code))
     if config.get("verboseverbose"):
         for k, v in reply.headers.items():
-            print("  {0}: {1}".format(k, v))
-    print("----------")
+            log.debug("  {0}: {1}".format(k, v))
+    log.debug("----------")
     if reply.headers["Content-Type"].startswith("application/json"):
-        print(json.dumps(reply.json(), indent=2))
+        log.debug(json.dumps(reply.json(), indent=2))
     else:
-        print(reply.text)
-    print("******************************")
+        log.debut(reply.text)
+    log.debug("******************************")
 
 
 def call(action, method, data_obj=None):
@@ -132,8 +129,8 @@ def upload_transactions(budget_id, transactions):
 
     new_list = [t for t in reversed_transactions if t.get("new")]
     for new_batch in chunker(new_list, 100):
-        print("Creating transactions up to {}..."
-              .format(new_batch[-1]["date"]))
+        log.info("Creating transactions up to {}..."
+                 .format(new_batch[-1]["date"]))
         new_result = post(method, {"transactions": new_batch})
         created += len(new_result["transaction_ids"])
         duplicates += len(new_result["duplicate_import_ids"])
@@ -141,8 +138,8 @@ def upload_transactions(budget_id, transactions):
     patch_list = [t for t in reversed_transactions
                   if not t.get("new") and t.get("dirty")]
     for patch_batch in chunker(patch_list, 100):
-        print("Patching transactions up to {}..."
-              .format(patch_batch[-1]["date"]))
+        log.debug("Patching transactions up to {}..."
+                  .format(patch_batch[-1]["date"]))
         patch_result = patch(method, {"transactions": patch_batch})
         patched += len(patch_result["transaction_ids"])
 

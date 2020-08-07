@@ -3,7 +3,6 @@ import os
 
 
 from lib import helpers
-from lib.config import config
 
 
 # -----------------------------------------------------------------------------
@@ -23,16 +22,14 @@ class State:
 
 
     def load(self):
-        if config.get("environment"):
-            for k in self.state:
-                self.state[k] = helpers.get_environment(k)
+        if self.loaded:
+            return
+        if os.path.exists(self.state_fn):
+            # make sure we have write access
+            with open(self.state_fn, "r+") as f:
+                self.state.update(json.load(f))
         else:
-            if os.path.exists(self.state_fn):
-                # make sure we have write access
-                with open(self.state_fn, "r+") as f:
-                    self.state.update(json.load(f))
-            else:
-                self.write_json()
+            self.write_json()
         self.loaded = True
 
 
@@ -50,10 +47,7 @@ class State:
         if name not in self.state:
             raise Exception("Cannot set unknown state: {}".format(name))
         self.state[name] = value
-        if config.get("environment"):
-            helpers.set_environment(name, value)
-        else:
-            self.write_json()
+        self.write_json()
 
 
     def write_json(self):
