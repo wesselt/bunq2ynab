@@ -1,6 +1,7 @@
 import errno
 import socket
 import time
+import traceback
 
 from lib import bunq
 from lib import bunq_api
@@ -8,6 +9,7 @@ from lib import network
 from lib import sync
 from lib import ynab
 from lib.config import config
+from lib.log import log
 
 
 # ----- Parameters
@@ -20,48 +22,36 @@ refresh_nocallback_minutes = 60
 
 config.parser.add_argument("--port", type=int,
     help="TCP port number to listen to.  Default is a random port.")
-config.parser.add_argument("bunq_user_name", nargs="?",
-    help="Bunq user name (retrieve using 'python3 list_user.py')")
-config.parser.add_argument("bunq_account_name", nargs="?",
-    help="Bunq account name (retrieve using 'python3 list_user.py')")
-config.parser.add_argument("ynab_budget_name", nargs="?",
-    help="YNAB user name (retrieve using 'python3 list_budget.py')")
-config.parser.add_argument("ynab_account_name", nargs="?",
-    help="YNAB account name (retrieve using 'python3 list_budget.py')")
 config.load()
 
-
-bunq_user_id = None
-bunq_account_id = None
-ynab_budget_id = None
-ynab_account_id = None
 
 serversocket = None
 callback_ip = None
 callback_port = None
 local_port = None
 portmap_port = None
+sync_obj = None
 
 
 # ----- Adding a callback to the bunq account
 
-def add_callback(ip, port):
-    print("Registering callback for port {}:{}...".format(ip, port))
+def add_callback(bunq_user_id, bunq_account_id, ip, port):
+    log.info("Registering callback for port {}:{}...".format(ip, port))
     url = "https://{}:{}/bunq2ynab-autosync".format(ip, port)
-    print("Adding BUNQ callback to: {}".format(url))
-    set_autosync_callbacks([{
+    log.info("Adding BUNQ callback to: {}".format(url))
+    set_autosync_callbacks(bunq_user_id, bunq_account_id, [{
         "category": "MUTATION",
         "notification_target": url
     }])
 
 
-def remove_callback():
-    set_autosync_callbacks([])
+def remove_callback(bunq_user_id, bunq_account_id):
+    set_autosync_callbacks(bunq_user_id, bunq_account_id, [])
 
 
-def set_autosync_callbacks(new_nfs):
+def set_autosync_callbacks(bunq_user_id, bunq_account_id, new_nfs):
     if not bunq_user_id or not bunq_user_id:
-        print("Can't change callbacks without user and account id.")
+        log.info("Can't change callbacks without user and account id.")
         return
 
     old_nfs = bunq_api.get_callbacks(bunq_user_id, bunq_account_id)
@@ -69,7 +59,7 @@ def set_autosync_callbacks(new_nfs):
         for nf in nfi.values():
             if (nf["category"] == "MUTATION" and
                     nf["notification_target"].endswith("/bunq2ynab-autosync")):
-                print("Removing old callback...")
+                log.info("Removing callback...")
             else:
                 new_nfs.append({
                     "category": nf["category"],
@@ -82,13 +72,13 @@ def set_autosync_callbacks(new_nfs):
 
 def synchronize():
     try:
-        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Starting sync...")
-        sync.synchronize(bunq_user_id, bunq_account_id,
-                         ynab_budget_id, ynab_account_id)
-        print(time.strftime('%Y-%m-%d %H:%M:%S') + " Finished sync")
-        print("")
+        log.info("Starting sync at " + time.strftime('%Y-%m-%d %H:%M:%S'))
+        sync_obj.synchronize()
+        log.info("Finished sync at " + time.strftime('%Y-%m-%d %H:%M:%S'))
+        log.info("")
     except Exception as e:
-        print("Error during synching: {}".format(e))
+        log.error("Error during synching: {}".format(e))
+        log.error(traceback.format_exc())
 
 
 # ----- Listen for bunq calls and run scheduled jobs
@@ -107,7 +97,7 @@ def bind_port():
             return serversocket, port
         except OSError as e:
             if e.errno == errno.EADDRINUSE:
-                print("Port {0} is in use, trying next port...".format(port))
+                log.warning("Port {0} is in use, trying next...".format(port))
                 continue
             raise
     raise Exception("No free port found")
@@ -116,51 +106,48 @@ def bind_port():
 # ----- Setup callback, wait for callback, teardown
 
 def setup_callback():
-    global bunq_user_id, bunq_account_id, ynab_budget_id, ynab_account_id
     global serversocket, callback_ip, callback_port, local_port, portmap_port
 
     # Don't try to map ports if we have a public IP
     callback_ip = callback_port = None
+    using_portmap = False
     local_ip = network.get_local_ip()
     if not network.is_private_ip(local_ip):
+        log.info("Host has a public IP...")
         callback_ip = local_ip
-        portmap_ip = None
+    elif config.get("port"):
+        log.info("Host has a private IP, port specified, configure forward " +
+                 "manually...")
+        callback_ip = network.get_public_ip()
     else:
-        print("Host has a private IP, trying upnp port mapping...")
+        log.info("Host has a private IP, trying upnp port mapping...")
         network.portmap_setup()
         network.portmap_search()
-        portmap_ip = network.portmap_public_ip()
-        callback_ip = portmap_ip
-
-    if not bunq_user_id:
-        bunq_user_id = bunq_api.get_user_id(config.get("bunq_user_name"))
-    if not bunq_account_id:
-        bunq_account_id = bunq_api.get_account_id(bunq_user_id,
-                                               config.get("bunq_account_name"))
-    if not ynab_budget_id:
-        ynab_budget_id = ynab.get_budget_id(config.get("ynab_budget_name"))
-    if not ynab_account_id:
-        ynab_account_id = ynab.get_account_id(ynab_budget_id,
-                                               config.get("ynab_account_name"))
+        callback_ip = network.get_public_ip()
+        using_portmap = True
 
     if not callback_ip:
-        print("No public IP found, not registering callback.")
+        log.error("No public IP found, not registering callback.")
         return
 
     if not serversocket:
         serversocket, local_port = bind_port()
-        print("Listening on port {0}...".format(local_port))
+        log.info("Listening on port {0}...".format(local_port))
         serversocket.listen(5)  # max incoming calls queued
  
-    if not portmap_ip:
+    if not using_portmap:
         callback_port = local_port
     else:
         portmap_port = network.portmap_add(portmap_port, local_port)
         if not portmap_port:
-            print("Failed to map port, not registering callback.")
+            log.error("Failed to map port, not registering callback.")
             return
         callback_port = portmap_port
-    add_callback(callback_ip, callback_port)
+
+    sync_obj.populate()
+    for acc in sync_obj.get_bunq_accounts():
+        add_callback(acc["bunq_user_id"], acc["bunq_account_id"],
+                     callback_ip, callback_port)
 
 
 def wait_for_callback():
@@ -170,14 +157,14 @@ def wait_for_callback():
         if time_left < 1:
             return
         try:
-            print("Waiting for callback for {} minutes...".format(
+            log.info("Waiting for callback for {} minutes...".format(
                   int(time_left/60)))
             serversocket.settimeout(time_left)
             (clientsocket, address) = serversocket.accept()
             clientsocket.close()
-            print("Incoming call from {}...".format(address[0]))
+            log.info("Incoming call from {}...".format(address[0]))
             if not network.is_bunq_server(address[0]):
-                print("Source IP not in BUNQ range")
+                log.info("Source IP not in BUNQ range")
             else:
                 synchronize()
         except socket.timeout as e:
@@ -185,36 +172,39 @@ def wait_for_callback():
 
 
 def teardown_callback():
-    print("Cleaning up...")
-    try:
-        remove_callback()
-    except Exception as e:
-        print("Error removing callback: {}".format(e))
+    log.info("Cleaning up...")
+    for acc in sync_obj.get_bunq_accounts():
+        try:
+            remove_callback(acc["bunq_user_id"], acc["bunq_account_id"])
+        except Exception as e:
+            log.info("Error removing callback: {}".format(e))
     try:
         network.portmap_remove(portmap_port)
     except Exception as e:
-        print("Error removing upnp port mapping: {}".format(e))
+        log.error("Error removing upnp port mapping: {}".format(e))
 
 
 # ----- Main loop
 try:
     while True:
         try:
+            sync_obj = sync.Sync()
+
             setup_callback()
 
-            print("Starting periodic synchronization...")
+            log.info("Starting periodic synchronization...")
             synchronize()
 
             if callback_ip and callback_port:
                 wait_for_callback()
             else:
-                print("No callback, waiting for {} minutes...".format(
+                log.warning("No callback, waiting for {} minutes...".format(
                     refresh_nocallback_minutes))
                 time.sleep(refresh_nocallback_minutes*60)
         except Exception as e:
-            print("Error: {}".format(e))
-            print(e)
-            print("Error occured, waiting 10 seconds.")
+            log.error("Error: {}".format(e))
+            log.error(traceback.format_exc())
+            log.error("Error occured, waiting 10 seconds.")
             time.sleep(10)
 finally:
     teardown_callback()

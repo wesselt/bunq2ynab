@@ -1,5 +1,5 @@
 from lib import bunq
-
+from lib.log import log
 
 def get_user_id(user_name):
     for u in bunq.get('v1/user'):
@@ -48,8 +48,8 @@ def get_accounts():
 
 
 def get_callbacks(user_id, account_id):
-    method = ("v1/user/" + user_id + "/monetary-account/" + account_id +
-              "/notification-filter-url")
+    method = ("v1/user/{}/monetary-account/{}/notification-filter-url"
+              .format(user_id, account_id))
     return bunq.get(method)
 
 
@@ -57,8 +57,8 @@ def put_callbacks(user_id, account_id, new_notifications):
     data = {
          "notification_filters": new_notifications
     }
-    method = ("v1/user/" + user_id + "/monetary-account/" + account_id +
-              "/notification-filter-url")
+    method = ("v1/user/{}/monetary-account/{}/notification-filter-url"
+              .format(user_id, account_id))
     bunq.post(method, data)
 
 
@@ -81,10 +81,10 @@ def get_payments(user_id, account_id, start_date):
               .format(user_id, account_id))
     payments = map_payments(bunq.get(method))
     got_date = payments[-1]["date"]
-    print("Retrieved back to {}...".format(got_date))
+    log.info("Retrieved back to {}...".format(got_date))
     while bunq.has_previous() and start_date <= got_date:
         payments.extend(map_payments(bunq.previous()))
         got_date = payments[-1]["date"]
-        print("Retrieved back to {}...".format(got_date))
+        log.info("Retrieved back to {}...".format(got_date))
     # For correct duplicate calculation, return only complete days
     return [p for p in payments if start_date <= p["date"]]

@@ -9,6 +9,7 @@ import sys
 from lib import network
 from lib.config import config
 from lib.state import state
+from lib.log import log
 
 
 url = "https://api.bunq.com/"
@@ -30,7 +31,7 @@ def clear_state():
 def check_stale_api_token():
     for_api_token = state.get("private_key_for_api_token")
     if for_api_token and for_api_token != config.get("api_token"):
-        print("New API token, clearing dependent keys and tokens...")
+        log.warning("New API token, clearing dependent keys and tokens...")
         clear_state()
 
 
@@ -38,7 +39,7 @@ def get_private_key():
     pem_str = state.get("private_key")
     if pem_str:
         return crypto.load_privatekey(crypto.FILETYPE_PEM, pem_str)
-    print("Generating new private key...")
+    log.info("Generating new private key...")
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 2048)
     pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
@@ -57,7 +58,7 @@ def get_installation_token():
     token = state.get("installation_token")
     if token:
         return token
-    print("Requesting installation token...")
+    log.info("Requesting installation token...")
     public_key = get_public_key()
     pem = crypto.dump_publickey(crypto.FILETYPE_PEM, public_key)
     method = "v1/installation"
@@ -78,7 +79,7 @@ def register_device():
     permitted_ips = ['*']
     if config.get("single_ip"):
         permitted_ips = [network.get_public_ip()]
-    print("Registering permitted IPs {}".format(",".join(permitted_ips)))
+    log.info("Registering permitted IPs {}".format(",".join(permitted_ips)))
     method = "v1/device-server"
     data = {
         "description": "bunq2ynab on " + network.get_hostname(),
@@ -98,7 +99,7 @@ def get_session_token():
         get_installation_token()
     if not state.get("device_registered"):
         register_device()
-    print("Requesting session token...")
+    log.info("Requesting session token...")
     method = "v1/session-server"
     data = {
         "secret": config.get("api_token")
@@ -137,32 +138,28 @@ def sign(action, method, headers, data):
 # -----------------------------------------------------------------------------
 
 def log_request(action, method, headers, data):
-    if not config.get("verbose"):
-        return
-    print("******************************")
-    print("{0} {1}".format(action, method))
-    if config.get("verboseverbose"):
+    log.debug("******************************")
+    log.debug("{0} {1}".format(action, method))
+    if config.get("headers"):
         for k, v in headers.items():
-            print("  {0}: {1}".format(k, v))
+            log.debug("  {0}: {1}".format(k, v))
     if data:
-        print("-----")
-        print(json.dumps(data, indent=2))
-        print("-----")
+        log.debug("-----")
+        log.debug(json.dumps(data, indent=2))
+        log.debug("-----")
 
 
 def log_reply(reply):
-    if not config.get("verbose"):
-        return
-    print("Status: {0}".format(reply.status_code))
-    if config.get("verboseverbose"):
+    log.debug("Status: {0}".format(reply.status_code))
+    if config.get("headers"):
         for k, v in reply.headers.items():
-            print("  {0}: {1}".format(k, v))
-    print("----------")
+            log.debug("  {0}: {1}".format(k, v))
+    log.debug("----------")
     if reply.headers["Content-Type"] == "application/json":
-        print(json.dumps(reply.json(), indent=2))
+        log.debug(json.dumps(reply.json(), indent=2))
     else:
-        print(reply.text)
-    print("******************************")
+        log.debug(reply.text)
+    log.debug("******************************")
 
 
 def call_requests(action, method, data_obj):

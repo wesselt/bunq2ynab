@@ -5,6 +5,7 @@ from lib import ynab
 from lib import bunq_api
 from lib import zerofx
 from lib.config import config
+from lib.log import log
 
 
 def pair_to_str(pair):
@@ -52,9 +53,11 @@ class Sync:
 
 
     def populate(self):
-        print("Retrieving bunq accounts...")
+        if self.populated:
+            raise Exception("Sync object is already populated")
+        log.info("Retrieving bunq accounts...")
         self.bunq_accounts = list(bunq_api.get_accounts())
-        print("Retrieving ynab accounts...")
+        log.info("Retrieving ynab accounts...")
         self.ynab_accounts = list(ynab.get_accounts())
 
         self.confpairs = config.get("accounts", [{}])
@@ -82,7 +85,24 @@ class Sync:
 
         for cp in self.confpairs:
             if "matched" not in cp:
-                print("No matches for rule {}.".format(pair_to_str(cp)))
+                log.warning("No matches for rule {}.".format(pair_to_str(cp)))
+
+        self.populated = True
+
+
+    def get_bunq_accounts(self):
+        if not self.populated:
+            raise Exception("Get_bunq_accounts called before populate")
+        bunqpairs = []
+        for syncpair in self.syncpairs:
+            if not [bp for bp in bunqpairs if
+                    bp["bunq_user_id"] == syncpair["bunq_user_id"] and
+                    bp["bunq_account_id"] == syncpair["bunq_account_id"]]:
+                bunqpairs.append({
+                    "bunq_user_id": syncpair["bunq_user_id"],
+                    "bunq_account_id": syncpair["bunq_account_id"]
+                })
+        return bunqpairs
 
 
     # Calculate occurernce for YNAB duplicate detection
@@ -115,11 +135,11 @@ class Sync:
                 if transaction:
                     transaction["matched_transfer"] = True
                     del transaction["payee_name"]  # Can't save transfer name
-                    print("Matched existing tranfer: {} {} {}...".format(
+                    log.info("Matched existing tranfer: {} {} {}...".format(
                         p["amount"], p["date"],
                         transfer_to["bunq_account_name"])) 
                 else:
-                    print("New tranfer: {} {} {}...".format(
+                    log.info("New tranfer: {} {} {}...".format(
                         p["amount"], p["date"],
                         transfer_to["bunq_account_name"]))
 
@@ -150,7 +170,7 @@ class Sync:
 
 
     def synchronize_account(self, syncpair):
-        print("Synching {}...".format(pair_to_str(syncpair)))
+        log.info("Synching {}...".format(pair_to_str(syncpair)))
 
         get_all = config.get("all", False)
         if get_all:
@@ -159,35 +179,33 @@ class Sync:
             dt = datetime.datetime.now() - datetime.timedelta(days=35)
             start_dt = dt.strftime("%Y-%m-%d")
 
-        print("Reading ynab transactions from {}...".format(start_dt))
+        log.info("Reading ynab transactions from {}...".format(start_dt))
         transactions = ynab.get_transactions(syncpair["ynab_budget_id"], 
                                          syncpair["ynab_account_id"], start_dt)
-        print("Retrieved {} ynab transactions...".format(len(transactions)))
+        log.info("Retrieved {} ynab transactions...".format(len(transactions)))
 
         # Push start date back to latest YNAB entry
         if not get_all:
             start_dt = min(start_dt, get_last_transaction_date(transactions))
 
-        print("Reading bunq payments from {}...".format(start_dt))
+        log.info("Reading bunq payments from {}...".format(start_dt))
         payments = bunq_api.get_payments(syncpair["bunq_user_id"],
                                          syncpair["bunq_account_id"], start_dt)
-        print("Retrieved {} bunq payments...".format(len(payments)))
+        log.info("Retrieved {} bunq payments...".format(len(payments)))
 
         self.extend_transactions(transactions, payments, syncpair)
         zerofx.merge(transactions)
 
         created, duplicates, patched = ynab.upload_transactions(
             syncpair["ynab_budget_id"], transactions)
-        print("Created {} and patched {} transactions."
+        log.info("Created {} and patched {} transactions."
               .format(created, patched))
         if duplicates:
-            print("WARNING: there were {} duplicates.".format(duplicates))
+            log.warning("There were {} duplicates.".format(duplicates))
 
 
     def synchronize(self):
-        self.populate()
+        if not self.populated:
+            raise Exception("Synchronize called before populate")
         for syncpair in self.syncpairs:
            self.synchronize_account(syncpair)
-
-
-sync = Sync()
