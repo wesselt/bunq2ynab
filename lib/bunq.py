@@ -140,9 +140,8 @@ def sign(action, method, headers, data):
 def log_request(action, method, headers, data):
     log.debug("******************************")
     log.debug("{0} {1}".format(action, method))
-    if config.get("headers"):
-        for k, v in headers.items():
-            log.debug("  {0}: {1}".format(k, v))
+    for k, v in headers.items():
+        log.debug("  {0}: {1}".format(k, v))
     if data:
         log.debug("-----")
         log.debug(json.dumps(data, indent=2))
@@ -151,9 +150,8 @@ def log_request(action, method, headers, data):
 
 def log_reply(reply):
     log.debug("Status: {0}".format(reply.status_code))
-    if config.get("headers"):
-        for k, v in reply.headers.items():
-            log.debug("  {0}: {1}".format(k, v))
+    for k, v in reply.headers.items():
+        log.debug("  {0}: {1}".format(k, v))
     log.debug("----------")
     if reply.headers["Content-Type"] == "application/json":
         log.debug(json.dumps(reply.json(), indent=2))

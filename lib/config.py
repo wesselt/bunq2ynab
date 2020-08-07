@@ -20,31 +20,29 @@ class Config:
     def add_default_arguments(self):
         self.parser.add_argument("--log-level",
             help="Set log level to debug, info, warning, error, or critical")
-        self.parser.add_argument("-v", "--verbose",
-            action="store_const", const="True",
-            help="Show content of JSON messages")
-        self.parser.add_argument("-vv", "--headers",
-            action="store_const", const="True",
-            help="Show HTTP headers")
-        self.parser.add_argument("--single-ip",
-            action="store_const", const="True",
+        self.parser.add_argument("--single-ip", action="store_true",
             help="Register BUNQ device-server with a single IP address " +
                 "instead of a wildcard for all IPs.")
-        self.parser.add_argument("-d", "--detailed",
-            action="store_const", const=True,
-            help="Write detailed logs, including timestamp and source line")
+        self.parser.add_argument("-v", "--verbose", action="store_true",
+            help="Shortcut for '--log-level debug'")
 
 
     def load(self):
 
         # Add command line settings
         args = self.parser.parse_args()
+        if args.verbose:
+            log_module.set_log_level("-v argument", "debug")
+        elif args.log_level:
+            log_module.set_log_level("--log-level argument", args.log_level)
+
         self.config = {}
         for k, v in vars(args).items():
             self.config[k] = v
         self.read_json_config()
 
-        log_module.load_config(self)
+        if config["log_level"]:
+            log_module.set_log_level("file config.json", config["log_level"])
 
 
     def __getitem__(self, name):

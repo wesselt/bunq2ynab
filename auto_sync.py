@@ -3,11 +3,9 @@ import socket
 import time
 import traceback
 
-from lib import bunq
 from lib import bunq_api
 from lib import network
 from lib import sync
-from lib import ynab
 from lib import helpers
 from lib.config import config
 from lib.log import log
