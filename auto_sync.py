@@ -153,7 +153,7 @@ def wait_for_callback():
     last_sync = time.time()
     next_refresh = time.time() + refresh_callback_minutes*60
     next_sync = next_refresh
-    while time.time() < next_refresh:
+    while True:
         time_left = max(min(next_sync, next_refresh) - time.time(), 0)
         log.info("Waiting for callback for {}...".format(
               helpers.format_seconds(time_left)))
@@ -168,7 +168,9 @@ def wait_for_callback():
         except socket.timeout as e:
             pass
 
-        if time.time() < last_sync + 30:
+        if next_refresh <= time.time():
+            return
+        elif time.time() < last_sync + 30:
             next_sync = last_sync + 30
         else:
             synchronize()
