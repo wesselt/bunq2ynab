@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This application syncs BUNQ transactions to YNAB. You need to add your BUNQ api_token 
+  and YNAB accesstoken.
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: bunq-ynab-aws-lambda
+    Description: >
+      This application syncs BUNQ transactions to YNAB. You need to run the function 
+      to list your accounts and budgets. Next add these to your SSM parameter json. 
+      Finally set the LIST_MODE environment variable to 0. Full instructions in the
+      README file.
+    Author: Wessel Troost, Javy de Koning
+    ReadmeUrl: README.md
+    SpdxLicenseId: GPL-2.0-only
+    LicenseUrl: LICENSE
+    Labels: ["Bunq", "Ynab"]
+    HomePageUrl: https://github.com/wesselt/bunq2ynab
+    SemanticVersion: 0.2.0
+    SourceCodeUrl: https://github.com/wesselt/bunq2ynab
+
+Parameters:
+  BunqApiToken:
+    Type: String
+    Description: Your BUNQ API Token
+  YnabAccessToken:
+    Type: String
+    Description: Your YNAB access token
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+
+Globals:
+  Function:
+    Timeout: 30
+
+Resources:
+  bunq2ynab:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: bunq2ynab.handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SSM_PARAM:
+            Ref: ConfigJSON
+          LOG_LEVEL: "INFO"
+          LIST_MODE: "1"
+      Policies:
+        - Statement:
+            - Sid: SSMGetPutPolicy
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigJSON}"
+      Events:
+        CloudWatchCronEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+
+  ConfigJSON:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: bunq2ynab
+      Type: String
+      Value: !Sub >
+        {
+          "api_token": "${BunqApiToken}",
+          "personal_access_token": "${YnabAccessToken}",
+          "accounts": [
+            {
+              "bunq_account_name": "*",
+              "ynab_budget_name": "*",
+              "ynab_account_name": "*"
+            }
+          ]
+        }
