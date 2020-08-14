@@ -189,7 +189,7 @@ def call(action, method, data=None):
     if ("Error" in result and
             result["Error"][0]["error_description"]
             == "Insufficient authorisation."):
-        set("session_token", "")
+        state.set("session_token", "")
         result = call_requests(action, method, data)
         if isinstance(result, str):
             return result
