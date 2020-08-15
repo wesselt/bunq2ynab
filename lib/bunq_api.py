@@ -80,6 +80,9 @@ def get_payments(user_id, account_id, start_date):
     method = ("v1/user/{0}/monetary-account/{1}/payment?count=200"
               .format(user_id, account_id))
     payments = map_payments(bunq.get(method))
+    if not payments:
+        log.info("No bunq payments found...")
+        return []
     got_date = payments[-1]["date"]
     log.info("Retrieved back to {}...".format(got_date))
     while bunq.has_previous() and start_date <= got_date:

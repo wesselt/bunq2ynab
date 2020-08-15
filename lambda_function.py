@@ -5,7 +5,7 @@ from lib.config import config
 config.load()
 
 
-def handler(event, context):
+def lambda_handler(event, context):
     sync = Sync()
     sync.populate()
     sync.synchronize()

@@ -18,13 +18,17 @@ class Config:
         self.add_default_arguments()
 
     def add_default_arguments(self):
+        self.parser.add_argument("--all", "-a", action="store_true",
+                         help="Synchronize all instead of recent transactions")
+        self.parser.add_argument("--dry", action="store_true",
+                                 help="Dry run, don't upload anything to YNAB")
         self.parser.add_argument("--log-level",
-                                 help="Set log level to debug, info, warning, error, or critical")
+              help="Set log level to debug, info, warning, error, or critical")
         self.parser.add_argument("--single-ip", action="store_true",
-                                 help="Register BUNQ device-server with a single IP address " +
-                                 "instead of a wildcard for all IPs.")
+                 help="Register BUNQ device-server with a single IP address " +
+                                          "instead of a wildcard for all IPs.")
         self.parser.add_argument("-v", "--verbose", action="store_true",
-                                 help="Shortcut for '--log-level debug'")
+                                       help="Shortcut for '--log-level debug'")
 
     def load(self):
 
@@ -38,10 +42,10 @@ class Config:
         if os.environ.get("LOG_LEVEL"):
             log_module.set_log_level("environment", os.environ["LOG_LEVEL"])
 
-        if os.environ.get("SSM_PARAM"):
-            log.info('Reading config from SSM Path: {0}'.format(
-                os.environ["SSM_PARAM"]))
-            self.read_ssm_config(os.environ["SSM_PARAM"])
+        ssmpath = os.environ.get("SSM_CONFIG_PARAM")
+        if ssmpath:
+            log.info('Reading config from SSM Path: {0}'.format(ssmpath))
+            self.read_ssm_config(ssmpath)
         else:
             self.read_json_config()
 
@@ -67,9 +71,8 @@ class Config:
     def read_ssm_config(self, ssmpath):
         try:
             resp = parameter_store.fetch_parameter(ssmpath)
-            conf = json.loads(resp)
+            self.config = json.loads(resp)
             log.debug('Fetched configuration')
-            self.config.update(conf)
         except Exception as e:
             log.critical("Error loading configuration from SSM Parameter: {}: {}"
                          .format(ssmpath, e))
@@ -94,8 +97,7 @@ class Config:
 
         try:
             with open(self.config_fn) as f:
-                conf = json.load(f)
-                self.config.update(conf)
+                self.config = json.load(f)
         except Exception as e:
             log.critical("Error loading configuration {}: {}"
                          .format(self.config_fn, e))
