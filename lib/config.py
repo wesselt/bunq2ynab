@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 
-from lib.parameter_store import ParameterStore
+from lib.parameter_store import parameter_store
 from lib import helpers
 from lib import log as log_module
 from lib.log import log
@@ -28,7 +28,7 @@ class Config:
 
     def load(self):
 
-        # Add command line settings
+        # Parse command line settings
         args = self.parser.parse_args()
         if args.verbose:
             log_module.set_log_level("-v argument", "debug")
@@ -38,16 +38,16 @@ class Config:
         if os.environ.get("LOG_LEVEL"):
             log_module.set_log_level("environment", os.environ["LOG_LEVEL"])
 
-        self.config = {}
-        for k, v in vars(args).items():
-            self.config[k] = v
-
         if os.environ.get("SSM_PARAM"):
             log.info('Reading config from SSM Path: {0}'.format(
                 os.environ["SSM_PARAM"]))
             self.read_ssm_config(os.environ["SSM_PARAM"])
         else:
             self.read_json_config()
+
+        # Override config.json with command line settings
+        for k, v in vars(args).items():
+            self.config[k] = v
 
         if config["log_level"]:
             log_module.set_log_level("file config.json", config["log_level"])
@@ -65,12 +65,10 @@ class Config:
         return self.config.get(name, default)
 
     def read_ssm_config(self, ssmpath):
-        parameter_store = ParameterStore()
         try:
             resp = parameter_store.fetch_parameter(ssmpath)
             conf = json.loads(resp)
-            log.debug('Fetched configuration: {0}'.format(
-                json.dumps(conf, indent=4)))
+            log.debug('Fetched configuration')
             self.config.update(conf)
         except Exception as e:
             log.critical("Error loading configuration from SSM Parameter: {}: {}"

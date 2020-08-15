@@ -44,3 +44,6 @@ class ParameterStore:
                 Type='String',
                 Overwrite=True
             )
+
+
+parameter_store = ParameterStore()
