@@ -2,6 +2,7 @@ import json
 import os
 
 
+from lib.parameter_store import ParameterStore
 from lib import helpers
 
 
@@ -24,12 +25,19 @@ class State:
     def load(self):
         if self.loaded:
             return
-        if os.path.exists(self.state_fn):
-            # make sure we have write access
-            with open(self.state_fn, "r+") as f:
-                self.state.update(json.load(f))
+        if os.environ.get("SSM_PARAM"):
+            resp = parameter_store.fetch_parameter(ssmpath)
+            conf = json.loads(resp)
+            log.debug('Fetched configuration: {0}'.format(
+                json.dumps(conf, indent=4)))
         else:
-            self.write_json()
+            if os.path.exists(self.state_fn):
+                # make sure we have write access
+                with open(self.state_fn, "r+") as f:
+                    self.state.update(json.load(f))
+            else:
+                # Write exmpty state
+                self.write_json()
         self.loaded = True
 
 
