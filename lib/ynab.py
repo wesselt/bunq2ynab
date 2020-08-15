@@ -121,6 +121,10 @@ def chunker(seq, size):
 
 
 def upload_transactions(budget_id, transactions):
+    if config["dry"]:
+        log.info("Dry run, skipping upload to YNAB...")
+        return 0, 0, 0
+
     method = "v1/budgets/" + budget_id + "/transactions"
     reversed_transactions = list(reversed(transactions))
     created = duplicates = patched = 0

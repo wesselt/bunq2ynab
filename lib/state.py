@@ -2,8 +2,9 @@ import json
 import os
 
 
-from lib.parameter_store import ParameterStore
+from lib.parameter_store import parameter_store
 from lib import helpers
+from lib.log import log
 
 
 # -----------------------------------------------------------------------------
@@ -25,11 +26,11 @@ class State:
     def load(self):
         if self.loaded:
             return
-        if os.environ.get("SSM_PARAM"):
+        ssmpath = os.environ.get("SSM_STATE_PARAM")
+        if ssmpath:
             resp = parameter_store.fetch_parameter(ssmpath)
             conf = json.loads(resp)
-            log.debug('Fetched configuration: {0}'.format(
-                json.dumps(conf, indent=4)))
+            log.debug('Fetched state {0}'.format(ssmpath))
         else:
             if os.path.exists(self.state_fn):
                 # make sure we have write access
@@ -37,7 +38,7 @@ class State:
                     self.state.update(json.load(f))
             else:
                 # Write exmpty state
-                self.write_json()
+                self.write_state()
         self.loaded = True
 
 
@@ -55,12 +56,17 @@ class State:
         if name not in self.state:
             raise Exception("Cannot set unknown state: {}".format(name))
         self.state[name] = value
-        self.write_json()
+        self.write_state()
 
 
-    def write_json(self):
-        with open(self.state_fn, "w") as f:
-            json.dump(self.state, f, indent=4)
+    def write_state(self):
+        ssmpath = os.environ.get("SSM_STATE_PARAM")
+        if ssmpath:
+            parameter_store.put_parameter(ssmpath,
+                json.dumps(self.state, indent=4))
+        else:
+            with open(self.state_fn, "w") as f:
+                json.dump(self.state, f, indent=4)
     
 
 state = State()
