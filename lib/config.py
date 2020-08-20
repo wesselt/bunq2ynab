@@ -19,14 +19,14 @@ class Config:
 
     def add_default_arguments(self):
         self.parser.add_argument("--all", "-a", action="store_true",
-                         help="Synchronize all instead of recent transactions")
+                                 help="Synchronize all instead of recent transactions")
         self.parser.add_argument("--dry", action="store_true",
                                  help="Dry run, don't upload anything to YNAB")
         self.parser.add_argument("--log-level",
-              help="Set log level to debug, info, warning, error, or critical")
+                                 help="Set log level to debug, info, warning, error, or critical")
         self.parser.add_argument("--single-ip", action="store_true",
-                 help="Register BUNQ device-server with a single IP address " +
-                                          "instead of a wildcard for all IPs.")
+                                 help="Register BUNQ device-server with a single IP address " +
+                                 "instead of a wildcard for all IPs.")
         self.parser.add_argument("-v", "--verbose", action="store_true",
                                        help="Shortcut for '--log-level debug'")
 
