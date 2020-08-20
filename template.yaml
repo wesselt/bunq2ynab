@@ -39,12 +39,14 @@ Resources:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: ./
-      Handler: bunq2ynab.handler
+      Handler: lambda_function.lambda_handler
       Runtime: python3.8
       Environment:
         Variables:
-          SSM_PARAM:
+          SSM_CONFIG_PARAM:
             Ref: ConfigJSON
+          SSM_STATE_PARAM:
+            Ref: StateJSON
           LOG_LEVEL: "INFO"
           LIST_MODE: "1"
       Policies:
@@ -54,7 +56,11 @@ Resources:
               Action:
                 - ssm:GetParameter
                 - ssm:PutParameter
-              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigJSON}"
+              Resource:
+                [
+                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigJSON}",
+                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${StateJSON}",
+                ]
       Events:
         CloudWatchCronEvent:
           Type: Schedule
@@ -64,7 +70,7 @@ Resources:
   ConfigJSON:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: bunq2ynab
+      Name: bunq2ynab-config
       Type: String
       Value: !Sub >
         {
@@ -77,4 +83,18 @@ Resources:
               "ynab_account_name": "*"
             }
           ]
+        }
+
+  StateJSON:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: bunq2ynab-state
+      Type: String
+      Value: !Sub >
+        {
+          "private_key": "",
+          "private_key_for_api_token": "",
+          "installation_token": "",
+          "device_registered": "",
+          "session_token": ""
         }
