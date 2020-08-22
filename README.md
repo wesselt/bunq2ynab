@@ -1,9 +1,5 @@
 # bunq2ynab
 
-A python script to upload BUNQ transactions to YNAB
-
-## Introduction
-
 Bunq2ynab is a python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.
 
 You'll need a key from both parties to enable synchronization:
