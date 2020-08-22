@@ -1,3 +1,4 @@
 pyOpenSSL
 requests
 boto3
+miniupnpc
