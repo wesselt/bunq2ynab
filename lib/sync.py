@@ -162,11 +162,7 @@ class Sync:
                 if transfer_to:
                     new_trans["payee_id"] = transfer_to["transfer_payee_id"]
                 else:
-                    iban_descr = ""
-                    if p["iban"]:
-                        iban_descr = " (" + p["iban"] + ")"
-                    payee_descr = p["payee"][:50-len(iban_descr)] + iban_descr
-                    new_trans["payee_name"] = payee_descr
+                    new_trans["payee_name"] = p["payee"][:50]
                 transactions.append(new_trans)
         return transactions
 
