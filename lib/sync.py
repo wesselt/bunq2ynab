@@ -200,10 +200,10 @@ class Sync:
               .format(created, patched))
         if duplicates:
             log.warning("There were {} duplicates.".format(duplicates))
-
+        return "Created {} and patched {} transactions.".format(created, patched)
 
     def synchronize(self):
         if not self.populated:
             raise Exception("Synchronize called before populate")
         for syncpair in self.syncpairs:
-           self.synchronize_account(syncpair)
+           return self.synchronize_account(syncpair)

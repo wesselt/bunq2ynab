@@ -41,6 +41,7 @@ Resources:
       CodeUri: ./
       Handler: lambda_function.lambda_handler
       Runtime: python3.8
+      MemorySize: 512
       Environment:
         Variables:
           SSM_CONFIG_PARAM:
@@ -66,6 +67,15 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: rate(5 minutes)
+        CatchAll:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+
+  CallbackUrl:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: bunq2ynab-callback-url
+      Type: String
+      Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
 
   ConfigJSON:
     Type: AWS::SSM::Parameter
