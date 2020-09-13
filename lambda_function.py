@@ -1,3 +1,5 @@
+from pprint import pformat
+
 from lib.sync import Sync
 from lib.config import config
 from lib.log import log
@@ -14,5 +16,8 @@ def lambda_handler(event, context):
             "body": result
         }
     except Exception as e:
-        log.exception(e)
-        raise
+        return {
+            "statusCode": 500,
+            "body": str(e)
+        }
+        
