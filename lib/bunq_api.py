@@ -1,6 +1,43 @@
 from lib import bunq
 from lib.log import log
 
+# ----- Adding a callback to the bunq account
+
+def add_callback(name, bunq_user_id, bunq_account_id, ip, port):
+    log.info("Registering callback for port {}:{}...".format(ip, port))
+    url = "https://{}:{}/bunq2ynab-{}".format(ip, port, name)
+    log.info("Adding BUNQ callback to: {}".format(url))
+    set_callbacks(name, bunq_user_id, bunq_account_id, [{
+        "category": "MUTATION",
+        "notification_target": url
+    }])
+
+
+def remove_callback(name, bunq_user_id, bunq_account_id):
+    set_callbacks(name, bunq_user_id, bunq_account_id, [])
+
+
+def set_callbacks(name, bunq_user_id, bunq_account_id, new_nfs):
+    if not bunq_user_id or not bunq_user_id:
+        log.info("Can't change callbacks without user and account id.")
+        return
+
+    old_nfs = get_callbacks(bunq_user_id, bunq_account_id)
+    for nfi in old_nfs:
+        for nf in nfi.values():
+            if (nf["category"] == "MUTATION" and
+                    nf["notification_target"].endswith("/bunq2ynab-" + name)):
+                log.info("Removing callback...")
+            else:
+                new_nfs.append({
+                    "category": nf["category"],
+                    "notification_target": nf["notification_target"]
+                })
+    put_callbacks(bunq_user_id, bunq_account_id, new_nfs)
+
+
+# -----------------------------------------------------------------------------
+
 def get_user_id(user_name):
     for u in bunq.get('v1/user'):
         for k, v in u.items():

@@ -32,40 +32,6 @@ portmap_port = None
 sync_obj = None
 
 
-# ----- Adding a callback to the bunq account
-
-def add_callback(bunq_user_id, bunq_account_id, ip, port):
-    log.info("Registering callback for port {}:{}...".format(ip, port))
-    url = "https://{}:{}/bunq2ynab-autosync".format(ip, port)
-    log.info("Adding BUNQ callback to: {}".format(url))
-    set_autosync_callbacks(bunq_user_id, bunq_account_id, [{
-        "category": "MUTATION",
-        "notification_target": url
-    }])
-
-
-def remove_callback(bunq_user_id, bunq_account_id):
-    set_autosync_callbacks(bunq_user_id, bunq_account_id, [])
-
-
-def set_autosync_callbacks(bunq_user_id, bunq_account_id, new_nfs):
-    if not bunq_user_id or not bunq_user_id:
-        log.info("Can't change callbacks without user and account id.")
-        return
-
-    old_nfs = bunq_api.get_callbacks(bunq_user_id, bunq_account_id)
-    for nfi in old_nfs:
-        for nf in nfi.values():
-            if (nf["category"] == "MUTATION" and
-                    nf["notification_target"].endswith("/bunq2ynab-autosync")):
-                log.info("Removing callback...")
-            else:
-                new_nfs.append({
-                    "category": nf["category"],
-                    "notification_target": nf["notification_target"]
-                })
-    bunq_api.put_callbacks(bunq_user_id, bunq_account_id, new_nfs)
-
 
 # ----- Synchronize with YNAB
 
@@ -145,8 +111,9 @@ def setup_callback():
 
     sync_obj.populate()
     for acc in sync_obj.get_bunq_accounts():
-        add_callback(acc["bunq_user_id"], acc["bunq_account_id"],
-                     callback_ip, callback_port)
+        bunq_api.add_callback("bunq2ynab-autosync",
+            acc["bunq_user_id"], acc["bunq_account_id"],
+            callback_ip, callback_port)
 
 
 def wait_for_callback():
@@ -182,7 +149,8 @@ def teardown_callback():
     log.info("Cleaning up...")
     for acc in sync_obj.get_bunq_accounts():
         try:
-            remove_callback(acc["bunq_user_id"], acc["bunq_account_id"])
+            bunq_api.remove_callback("bunq2ynab-autosync",
+                acc["bunq_user_id"], acc["bunq_account_id"])
         except Exception as e:
             log.info("Error removing callback: {}".format(e))
     try:
