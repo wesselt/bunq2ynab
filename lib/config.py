@@ -17,6 +17,7 @@ class Config:
         self.parser = argparse.ArgumentParser()
         self.add_default_arguments()
 
+
     def add_default_arguments(self):
         self.parser.add_argument("--all", "-a", action="store_true",
             help="Synchronize all instead of recent transactions")
@@ -30,8 +31,8 @@ class Config:
         self.parser.add_argument("-v", "--verbose", action="store_true",
            help="Shortcut for '--log-level debug'")
 
-    def load(self):
 
+    def load(self):
         # Parse command line settings
         args = self.parser.parse_args()
         if args.verbose:
@@ -55,8 +56,12 @@ class Config:
             if not k in self.config or v:
                 self.config[k] = v
 
+        if os.environ.get("SSM_CALLBACK_PARAM"):
+            self.config["ssm_callback"] = os.environ["SSM_CALLBACK_PARAM"]
+
         if config["log_level"]:
             log_module.set_log_level("file config.json", config["log_level"])
+
 
     def __getitem__(self, name):
         if not hasattr(self, "config"):
@@ -65,10 +70,12 @@ class Config:
             raise Exception("Unknown configuration \"{}\"".format(name))
         return self.config[name]
 
+
     def get(self, name, default=None):
         if not hasattr(self, "config"):
             raise Exception("Load config before using it")
         return self.config.get(name, default)
+
 
     def read_ssm_config(self, ssmpath):
         try:
@@ -79,6 +86,7 @@ class Config:
             log.critical("Error loading configuration from SSM Parameter: {}: {}"
                          .format(ssmpath, e))
             sys.exit(1)
+
 
     def read_json_config(self):
         if not os.path.exists(self.config_fn):

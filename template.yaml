@@ -46,6 +46,8 @@ Resources:
       MemorySize: 512
       Environment:
         Variables:
+          SSM_CALLBACK_PARAM:
+            Ref: CallbackUrl
           SSM_CONFIG_PARAM:
             Ref: ConfigJSON
           SSM_STATE_PARAM:
@@ -65,12 +67,17 @@ Resources:
                   !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${StateJSON}",
                 ]
       Events:
-        CloudWatchCronEvent:
-          Type: Schedule
+        #CloudWatchCronEvent:
+        #  Type: Schedule
+        #  Properties:
+        #    Schedule: rate(5 minutes)
+        #CatchAll:
+        #  Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        HttpApiEvent:
+          Type: HttpApi
           Properties:
-            Schedule: rate(5 minutes)
-        CatchAll:
-          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+            Path: /
+            Method: POST
 
   CallbackUrl:
     Type: AWS::SSM::Parameter
