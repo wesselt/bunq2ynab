@@ -11,6 +11,7 @@ from lib.log import log
 
 class State:
     state_fn = helpers.fname_to_path("state.json")
+    ssm_path = "bunq2ynab-state"
 
     def __init__(self):
         self.state = {
@@ -18,7 +19,8 @@ class State:
             "private_key_for_api_token": "",
             "installation_token": "",
             "device_registered": "",
-            "session_token": ""
+            "session_token": "",
+            "aws_callback": ""
         }
         self.loaded = False
 
@@ -26,11 +28,10 @@ class State:
     def load(self):
         if self.loaded:
             return
-        ssmpath = os.environ.get("SSM_STATE_PARAM")
-        if ssmpath:
-            resp = parameter_store.fetch_parameter(ssmpath)
-            conf = json.loads(resp)
-            log.debug('Fetched state {0}'.format(ssmpath))
+        if os.environ.get("AWS_REGION"):
+            log.info('Fetching SSM state {0}'.format(self.ssm_path))
+            resp = parameter_store.fetch_parameter(self.ssm_path)
+            self.state.update(json.loads(resp))
         else:
             if os.path.exists(self.state_fn):
                 # make sure we have write access
@@ -60,9 +61,9 @@ class State:
 
 
     def write_state(self):
-        ssmpath = os.environ.get("SSM_STATE_PARAM")
-        if ssmpath:
-            parameter_store.put_parameter(ssmpath,
+        if os.environ.get("AWS_REGION"):
+            log.info('Writing SSM state {0}'.format(self.ssm_path))
+            parameter_store.put_parameter(self.ssm_path,
                 json.dumps(self.state, indent=4))
         else:
             with open(self.state_fn, "w") as f:
