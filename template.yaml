@@ -46,14 +46,7 @@ Resources:
       MemorySize: 512
       Environment:
         Variables:
-          SSM_CALLBACK_PARAM:
-            Ref: CallbackUrl
-          SSM_CONFIG_PARAM:
-            Ref: ConfigJSON
-          SSM_STATE_PARAM:
-            Ref: StateJSON
           LOG_LEVEL: "INFO"
-          LIST_MODE: "1"
       Policies:
         - Statement:
             - Sid: SSMGetPutPolicy
@@ -63,8 +56,8 @@ Resources:
                 - ssm:PutParameter
               Resource:
                 [
-                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigJSON}",
-                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${StateJSON}",
+                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bunq2ynab-config",
+                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bunq2ynab-state",
                 ]
       Events:
         #CloudWatchCronEvent:
@@ -76,15 +69,8 @@ Resources:
         HttpApiEvent:
           Type: HttpApi
           Properties:
-            Path: /
+            Path: /bunq2ynab-lambda
             Method: POST
-
-  CallbackUrl:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: bunq2ynab-callback-url
-      Type: String
-      Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
 
   ConfigJSON:
     Type: AWS::SSM::Parameter
@@ -115,5 +101,6 @@ Resources:
           "private_key_for_api_token": "",
           "installation_token": "",
           "device_registered": "",
-          "session_token": ""
+          "session_token": "",
+          "aws_callback": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/bunq2ynab-lambda"
         }

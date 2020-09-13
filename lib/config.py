@@ -12,6 +12,7 @@ from lib.log import log
 
 class Config:
     config_fn = helpers.fname_to_path("config.json")
+    ssm_path = "bunq2ynab-config"
 
     def __init__(self):
         self.parser = argparse.ArgumentParser()
@@ -43,10 +44,8 @@ class Config:
         if os.environ.get("LOG_LEVEL"):
             log_module.set_log_level("environment", os.environ["LOG_LEVEL"])
 
-        ssmpath = os.environ.get("SSM_CONFIG_PARAM")
-        if ssmpath:
-            log.info('Reading config from SSM Path: {0}'.format(ssmpath))
-            self.read_ssm_config(ssmpath)
+        if os.environ.get("AWS_REGION"):
+            self.read_ssm_config()
         else:
             self.read_json_config()
 
@@ -55,9 +54,6 @@ class Config:
             # Use argument only when it's there
             if not k in self.config or v:
                 self.config[k] = v
-
-        if os.environ.get("SSM_CALLBACK_PARAM"):
-            self.config["ssm_callback"] = os.environ["SSM_CALLBACK_PARAM"]
 
         if config["log_level"]:
             log_module.set_log_level("file config.json", config["log_level"])
@@ -77,14 +73,15 @@ class Config:
         return self.config.get(name, default)
 
 
-    def read_ssm_config(self, ssmpath):
+    def read_ssm_config(self):
+        log.info('Reading config from SSM'.format(self.ssm_path))
         try:
-            resp = parameter_store.fetch_parameter(ssmpath)
+            resp = parameter_store.fetch_parameter(self.ssm_path)
             self.config = json.loads(resp)
             log.debug('Fetched configuration')
         except Exception as e:
             log.critical("Error loading configuration from SSM Parameter: {}: {}"
-                         .format(ssmpath, e))
+                         .format(self.ssm_path, e))
             sys.exit(1)
 
 
