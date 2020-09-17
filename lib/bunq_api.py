@@ -24,7 +24,11 @@ def set_callbacks(bunq_user_id, bunq_account_id, url_end, new_nfs):
         for nf in nfi.values():
             if (nf["category"] == "MUTATION" and
                     nf["notification_target"].endswith(url_end)):
-                log.info("Removing callback...")
+                if not [nnf for nnf in new_nfs
+                      if nf["category"] == "MUTATION" and
+                      nf["notification_target"] == nnf["notification_target"]]:
+                    log.info("Removing callback {}...".format(
+                        nf["notification_target"]))
             else:
                 new_nfs.append({
                     "category": nf["category"],
