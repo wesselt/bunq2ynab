@@ -30,10 +30,6 @@ Parameters:
     Description: Your YNAB access token
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 
-Globals:
-  Function:
-    Timeout: 300
-
 Resources:
   bunq2ynab:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -44,33 +40,49 @@ Resources:
       Handler: lambda_function.lambda_handler
       Runtime: python3.8
       MemorySize: 512
+      Timeout: 180  # 3 minutes
       Environment:
         Variables:
           LOG_LEVEL: "INFO"
       Policies:
         - Statement:
-            - Sid: SSMGetPutPolicy
+            - Sid: SSMGetConfig
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                [
+                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bunq2ynab-config",
+                ]
+            - Sid: SSMGetPutState
               Effect: Allow
               Action:
                 - ssm:GetParameter
                 - ssm:PutParameter
               Resource:
                 [
-                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bunq2ynab-config",
                   !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bunq2ynab-state",
                 ]
       Events:
-        #CloudWatchCronEvent:
-        #  Type: Schedule
-        #  Properties:
-        #    Schedule: rate(5 minutes)
-        #CatchAll:
-        #  Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        CloudWatchCronEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(8 hours)
+        CatchAll:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
         HttpApiEvent:
           Type: HttpApi
           Properties:
+            ApiId: !Ref HttpApi
             Path: /bunq2ynab-lambda
             Method: POST
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 1     # 1 request per second
+        ThrottlingRateLimit: 0.01   # 1 request per 100 seconds
 
   ConfigJSON:
     Type: AWS::SSM::Parameter
@@ -102,5 +114,5 @@ Resources:
           "installation_token": "",
           "device_registered": "",
           "session_token": "",
-          "aws_callback": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/bunq2ynab-lambda"
+          "aws_callback": "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/bunq2ynab-lambda"
         }
