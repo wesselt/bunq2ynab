@@ -28,10 +28,21 @@ Parameters:
   YnabAccessToken:
     Type: String
     Description: Your YNAB access token
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+  YnabBudget:
+    Type: String
+    Description: Name of your YNAB budget (use * for all budgets)
 
 Resources:
-  bunq2ynab:
+  Bunq2YnabLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: aws-layer-content
+      CompatibleRuntimes:
+        - python3.8
+    Metadata:
+      BuildMethod: makefile
+
+  Bunq2YnabFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Metadata:
       BuildMethod: makefile
@@ -39,6 +50,8 @@ Resources:
       CodeUri: ./
       Handler: lambda_function.lambda_handler
       Runtime: python3.8
+      Layers:
+        - !Ref Bunq2YnabLayer
       MemorySize: 512
       Timeout: 180  # 3 minutes
       Environment:
@@ -68,8 +81,6 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: rate(8 hours)
-        CatchAll:
-          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
         HttpApiEvent:
           Type: HttpApi
           Properties:
@@ -95,9 +106,7 @@ Resources:
           "personal_access_token": "${YnabAccessToken}",
           "accounts": [
             {
-              "bunq_account_name": "*",
-              "ynab_budget_name": "*",
-              "ynab_account_name": "*"
+              "ynab_budget_name": "${YnabBudget}"
             }
           ]
         }
