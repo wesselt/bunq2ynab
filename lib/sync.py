@@ -205,5 +205,12 @@ class Sync:
     def synchronize(self):
         if not self.populated:
             raise Exception("Synchronize called before populate")
+        results = ""
         for syncpair in self.syncpairs:
-           return self.synchronize_account(syncpair)
+            msg = self.synchronize_account(syncpair)
+            results += "{} -> {}-{}: {}\n".format(
+                syncpair["bunq_account_name"],
+                syncpair["ynab_budget_name"],
+                syncpair["ynab_account_name"],
+                msg)
+        return results
