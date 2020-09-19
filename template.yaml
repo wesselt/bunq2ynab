@@ -93,7 +93,7 @@ Resources:
     Properties:
       DefaultRouteSettings:
         ThrottlingBurstLimit: 1     # 1 request per second
-        ThrottlingRateLimit: 0.01   # 1 request per 100 seconds
+        ThrottlingRateLimit: 0.1   # 1 request per 10 seconds
 
   ConfigJSON:
     Type: AWS::SSM::Parameter
