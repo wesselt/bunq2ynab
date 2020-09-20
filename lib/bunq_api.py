@@ -1,40 +1,66 @@
 from lib import bunq
 from lib.log import log
 
+
 # ----- Adding a callback to the bunq account
 
 def add_callback(bunq_user_id, bunq_account_id, url_end, url):
-    log.info("Adding BUNQ callback to: {}".format(url))
-    set_callbacks(bunq_user_id, bunq_account_id, url_end, [{
+    if not url.endswith(url_end):
+        raise Exception("URL should end with end-of-url marker")
+    set_callbacks(bunq_user_id, bunq_account_id, url_end, {
         "category": "MUTATION",
         "notification_target": url
-    }])
+    })
 
 
 def remove_callback(bunq_user_id, bunq_account_id, url_end):
-    set_callbacks(bunq_user_id, bunq_account_id, url_end, [])
+    set_callbacks(bunq_user_id, bunq_account_id, url_end, None)
 
 
-def set_callbacks(bunq_user_id, bunq_account_id, url_end, new_nfs):
-    if not bunq_user_id or not bunq_user_id:
-        raise Exception("Can't change callbacks without user and account id.")
+def nf_to_callback(nf):
+    nf_vals = next(iter(nf.values()))
+    return {
+        "category": nf_vals["category"],
+        "notification_target": nf_vals["notification_target"]
+    }
 
-    old_nfs = get_callbacks(bunq_user_id, bunq_account_id)
-    for nfi in old_nfs:
-        for nf in nfi.values():
-            if (nf["category"] == "MUTATION" and
-                    nf["notification_target"].endswith(url_end)):
-                if not [nnf for nnf in new_nfs
-                      if nf["category"] == "MUTATION" and
-                      nf["notification_target"] == nnf["notification_target"]]:
-                    log.info("Removing callback {}...".format(
-                        nf["notification_target"]))
-            else:
-                new_nfs.append({
-                    "category": nf["category"],
-                    "notification_target": nf["notification_target"]
-                })
-    put_callbacks(bunq_user_id, bunq_account_id, new_nfs)
+
+def callback_equals(a, b):
+    return (a["category"] == b["category"]
+        and a["notification_target"] == b["notification_target"])
+
+
+def callback_str(cb):
+    return "{}:{}".format(
+        cb["category"],
+        cb["notification_target"])
+
+
+def set_callbacks(bunq_user_id, bunq_account_id, url_end, new_callback):
+    old_callbacks = [nf_to_callback(nf) for nf in
+                     get_notification_filters(bunq_user_id, bunq_account_id)]
+    new_callbacks = []
+    found = False
+    dirty = False
+    for cb in old_callbacks:
+        if not found and new_callback and callback_equals(cb, new_callback):
+            log.info("Found callback {}".format(callback_str(cb)))
+            found = True
+            new_callbacks.append(cb)
+        elif cb["notification_target"].endswith(url_end):
+            log.info("Removing callback {}".format(callback_str(cb)))
+            dirty = True
+        else:
+            new_callbacks.append(cb)
+    if new_callback and not found:
+        log.info("Adding callback {}".format(callback_str(new_callback)))
+        new_callbacks.append(new_callback)
+        dirty = True
+    if not dirty:
+        log.info("Callbacks already as they should be")
+        return
+    log.info("Setting callbacks...")
+    put_callbacks(bunq_user_id, bunq_account_id, new_callbacks)
 
 
 # -----------------------------------------------------------------------------
@@ -85,7 +111,7 @@ def get_accounts():
             yield from get_accounts_for_user(u)
 
 
-def get_callbacks(user_id, account_id):
+def get_notification_filters(user_id, account_id):
     method = ("v1/user/{}/monetary-account/{}/notification-filter-url"
               .format(user_id, account_id))
     return bunq.get(method)
