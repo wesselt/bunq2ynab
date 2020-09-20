@@ -44,7 +44,7 @@ def set_callbacks(bunq_user_id, bunq_account_id, url_end, new_callback):
     dirty = False
     for cb in old_callbacks:
         if not found and new_callback and callback_equals(cb, new_callback):
-            log.info("Found callback {}".format(callback_str(cb)))
+            log.debug("Found callback {}".format(callback_str(cb)))
             found = True
             new_callbacks.append(cb)
         elif cb["notification_target"].endswith(url_end):
@@ -57,9 +57,9 @@ def set_callbacks(bunq_user_id, bunq_account_id, url_end, new_callback):
         new_callbacks.append(new_callback)
         dirty = True
     if not dirty:
-        log.info("Callbacks already as they should be")
+        log.debug("Callbacks already as they should be")
         return
-    log.info("Setting callbacks...")
+    log.debug("Setting callbacks...")
     put_callbacks(bunq_user_id, bunq_account_id, new_callbacks)
 
 
