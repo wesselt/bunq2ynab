@@ -196,21 +196,31 @@ class Sync:
 
         created, duplicates, patched = ynab.upload_transactions(
             syncpair["ynab_budget_id"], transactions)
-        log.info("Created {} and patched {} transactions."
-              .format(created, patched))
-        if duplicates:
-            log.warning("There were {} duplicates.".format(duplicates))
-        return "Created {} and patched {} transactions.".format(created, patched)
+
+        msg = "{}: Created {} and patched {} transactions.{}\n".format(
+            pair_to_str(syncpair), created, patched,
+            "  There were {} duplicates.".format(duplicates)
+                if duplicates else "")
+        log.info(msg)
+        return msg
+
+
+    def synchronize_iban(self, iban):
+        if not self.populated:
+            raise Exception("Synchronize called before populate")
+        results = ""
+        for syncpair in self.syncpairs:
+            if syncpair["iban"] == iban:
+                return self.synchronize_account(syncpair)
+        msg = "No account with IBAN {}".format(iban)
+        log.warning(msg)
+        return msg
+
 
     def synchronize(self):
         if not self.populated:
             raise Exception("Synchronize called before populate")
         results = ""
         for syncpair in self.syncpairs:
-            msg = self.synchronize_account(syncpair)
-            results += "{} -> {}-{}: {}\n".format(
-                syncpair["bunq_account_name"],
-                syncpair["ynab_budget_name"],
-                syncpair["ynab_account_name"],
-                msg)
+            results += self.synchronize_account(syncpair)
         return results
