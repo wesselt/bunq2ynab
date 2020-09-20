@@ -120,6 +120,15 @@ def chunker(seq, size):
     return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
 
+def strip_transaction(original):
+    stripped = {}
+    for k in ["import_id", "account_id", "date", "amount", "memo", "cleared", 
+              "payee_name"]:
+        if k in original:
+            stripped[k] = original[k]
+    return stripped
+
+
 def upload_transactions(budget_id, transactions):
     if config["dry"]:
         log.info("Dry run, skipping upload to YNAB...")
@@ -129,7 +138,8 @@ def upload_transactions(budget_id, transactions):
     reversed_transactions = list(reversed(transactions))
     created = duplicates = patched = 0
 
-    new_list = [t for t in reversed_transactions if t.get("new")]
+    new_list = [strip_transaction(t) for t in reversed_transactions
+                if t.get("new")]
     for new_batch in chunker(new_list, 100):
         log.info("Creating transactions up to {}..."
                  .format(new_batch[-1]["date"]))
@@ -137,7 +147,7 @@ def upload_transactions(budget_id, transactions):
         created += len(new_result["transaction_ids"])
         duplicates += len(new_result["duplicate_import_ids"])
 
-    patch_list = [t for t in reversed_transactions
+    patch_list = [strip_transaction(t) for t in reversed_transactions
                   if not t.get("new") and t.get("dirty")]
     for patch_batch in chunker(patch_list, 100):
         log.debug("Patching transactions up to {}..."

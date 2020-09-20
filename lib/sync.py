@@ -116,7 +116,7 @@ class Sync:
 
 
     def extend_transactions(self, transactions, payments, syncpair):
-        ynab = {t["import_id"]:t for t in transactions}
+        ynab = {t["import_id"]:t for t in transactions if t["import_id"]}
         same_day = []
         for p in payments:
             milliunits = int((1000 * Decimal(p["amount"])).quantize(1))
@@ -137,11 +137,11 @@ class Sync:
                 if transaction:
                     transaction["matched_transfer"] = True
                     del transaction["payee_name"]  # Can't save transfer name
-                    log.info("Matched existing tranfer: {} {} {}...".format(
+                    log.debug("Matched existing tranfer: {} {} {}...".format(
                         p["amount"], p["date"],
                         transfer_to["bunq_account_name"])) 
                 else:
-                    log.info("New tranfer: {} {} {}...".format(
+                    log.debug("New tranfer: {} {} {}...".format(
                         p["amount"], p["date"],
                         transfer_to["bunq_account_name"]))
 
