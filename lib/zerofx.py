@@ -44,27 +44,27 @@ def merge_triple(original, reversal, corrected):
     original_cat = original.get("category_id")
     if original_cat:
         if not reversal.get("category_id"):
-            log.info("Categorizing zerofx reversal...")
+            log.debug("Categorizing zerofx reversal...")
             reversal["category_id"] = original_cat
             reversal["dirty"] = True
         if not corrected.get("category_id"):
-            log.info("Categorizing zerofx corrected...")
+            log.debug("Categorizing zerofx corrected...")
             corrected["category_id"] = original_cat
             corrected["dirty"] = True
     if original.get("approved"):
         if not reversal.get("approved"):
-            log.info("Approving zerofx reversal...")
+            log.debug("Approving zerofx reversal...")
             reversal["approved"] = True
             reversal["dirty"] = True
         if not corrected.get("approved"):
-            log.info("Approving zerofx corrected...")
+            log.debug("Approving zerofx corrected...")
             corrected["approved"] = True
             corrected["dirty"] = True
 
 
 def merge(transactions):
     # Search for payment, reversal, payment triple
-    log.info("Merging ZeroFX duplicates...")
+    log.debug("Merging ZeroFX duplicates...")
     for reversal in [t for t in transactions if "payment" in t]:
         if reversal["payment"]["sub_type"] == "REVERSAL":
             original = find_original(transactions, reversal)
