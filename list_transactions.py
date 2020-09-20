@@ -1,3 +1,4 @@
+import datetime
 from decimal import Decimal
 
 from lib import ynab
@@ -22,8 +23,9 @@ def print_transaction(t):
         t["date"], Decimal(t["amount"]), t["import_id"] or "", t["payee_name"],
         t["category_name"]))
 
+dt = datetime.datetime.now() - datetime.timedelta(14)
+start_dt = dt.strftime("%Y-%m-%d")
 
-result = ynab.get("v1/budgets/{0}/accounts/{1}/transactions".format(
-    ynab_budget_id, ynab_account_id))
-for t in result["transactions"]:
+result = ynab.get_transactions(ynab_budget_id, ynab_account_id, start_dt)
+for t in result:
     print_transaction(t)

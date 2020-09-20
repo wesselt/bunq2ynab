@@ -104,7 +104,7 @@ def get_accounts():
                 } 
 
 
-def get_transactions(budget_id, account_id, start_date):
+def get_raw_transactions(budget_id, account_id, start_date):
     result = get("v1/budgets/{0}/accounts/{1}/transactions?since_date={2}"
         .format(budget_id, account_id, start_date))
     if result["transactions"]:
@@ -114,19 +114,26 @@ def get_transactions(budget_id, account_id, start_date):
     return result["transactions"]
 
 
+def get_transactions(budget_id, account_id, start_date):
+    transactions = get_raw_transactions(budget_id, account_id, start_date)
+    same_day = []
+    for t in transactions:
+        if same_day and same_day[0]["date"] != t["date"]:
+            same_day.clear()
+        same_day.append(t)
+        occurrence = len([s for s in same_day if s["amount"] == t["amount"]])
+        if not t.get("import_id"):
+            import_id = "YNAB:{}:{}:{}".format(t["amount"], t["date"],
+                                               occurrence)
+            log.debug("Simulated import_id {}".format(import_id))
+            t["import_id"] = import_id
+    return transactions
+
+
 # -----------------------------------------------------------------------------
 
 def chunker(seq, size):
     return (seq[pos:pos + size] for pos in range(0, len(seq), size))
-
-
-def strip_transaction(original):
-    stripped = {}
-    for k in ["import_id", "account_id", "date", "amount", "memo", "cleared", 
-              "payee_name"]:
-        if k in original:
-            stripped[k] = original[k]
-    return stripped
 
 
 def upload_transactions(budget_id, transactions):
@@ -138,8 +145,7 @@ def upload_transactions(budget_id, transactions):
     reversed_transactions = list(reversed(transactions))
     created = duplicates = patched = 0
 
-    new_list = [strip_transaction(t) for t in reversed_transactions
-                if t.get("new")]
+    new_list = [t for t in reversed_transactions if t.get("new")]
     for new_batch in chunker(new_list, 100):
         log.info("Creating transactions up to {}..."
                  .format(new_batch[-1]["date"]))
@@ -147,7 +153,7 @@ def upload_transactions(budget_id, transactions):
         created += len(new_result["transaction_ids"])
         duplicates += len(new_result["duplicate_import_ids"])
 
-    patch_list = [strip_transaction(t) for t in reversed_transactions
+    patch_list = [t for t in reversed_transactions
                   if not t.get("new") and t.get("dirty")]
     for patch_batch in chunker(patch_list, 100):
         log.debug("Patching transactions up to {}..."

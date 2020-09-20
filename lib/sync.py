@@ -126,25 +126,6 @@ class Sync:
             transfer_to = next((sp for sp in self.syncpairs
                                 if sp["iban"] == p["iban"]), None)
             transaction = ynab.get(import_id)
-            if not transaction and transfer_to:   
-                transaction = next((t for t in transactions
-                    if t["import_id"] is None and
-                       t["amount"] == milliunits and
-                       t["date"] == p["date"] and
-                       t["payee_id"] == transfer_to["transfer_payee_id"] and
-                       t.get("matched_transfer", "") == ""  # Not yet matched
-                    ), None)
-                if transaction:
-                    transaction["matched_transfer"] = True
-                    del transaction["payee_name"]  # Can't save transfer name
-                    log.debug("Matched existing tranfer: {} {} {}...".format(
-                        p["amount"], p["date"],
-                        transfer_to["bunq_account_name"])) 
-                else:
-                    log.debug("New tranfer: {} {} {}...".format(
-                        p["amount"], p["date"],
-                        transfer_to["bunq_account_name"]))
-
             if transaction:
                 transaction["payment"] = p
             else:
