@@ -12,13 +12,13 @@ Metadata:
       to list your accounts and budgets. Next add these to your SSM parameter json. 
       Finally set the LIST_MODE environment variable to 0. Full instructions in the
       README file.
-    Author: Wessel Troost, Javy de Koning
+    Author: Wessel Troost and Javy de Koning
     ReadmeUrl: README.md
     SpdxLicenseId: GPL-2.0-only
     LicenseUrl: LICENSE
     Labels: ["Bunq", "Ynab"]
     HomePageUrl: https://github.com/wesselt/bunq2ynab
-    SemanticVersion: 0.2.0
+    SemanticVersion: 1.0.0
     SourceCodeUrl: https://github.com/wesselt/bunq2ynab
 
 Parameters:
@@ -53,7 +53,7 @@ Resources:
       Layers:
         - !Ref Bunq2YnabLayer
       MemorySize: 512
-      Timeout: 180  # 3 minutes
+      Timeout: 180 # 3 minutes
       Environment:
         Variables:
           LOG_LEVEL: "INFO"
@@ -92,8 +92,8 @@ Resources:
     Type: AWS::Serverless::HttpApi
     Properties:
       DefaultRouteSettings:
-        ThrottlingBurstLimit: 1     # 1 request per second
-        ThrottlingRateLimit: 0.1   # 1 request per 10 seconds
+        ThrottlingBurstLimit: 1 # 1 request per second
+        ThrottlingRateLimit: 0.1 # 1 request per 10 seconds
 
   ConfigJSON:
     Type: AWS::SSM::Parameter
