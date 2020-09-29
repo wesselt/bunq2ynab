@@ -16,7 +16,7 @@ We've published Bunq2Ynab as Serverless application on the Serverless Applicatio
 ### Deploying the function
 
 1. Navigate to the [Serverless Application Repository](https://console.aws.amazon.com/serverlessrepo/).
-2. Click `Public applications`, select `Show apps that create custom IAM roles or resource policies` and search for `bunq-ynab-aws-lambda`.
+2. Click `Available Applications`, then `Public applications`, select `Show apps that create custom IAM roles or resource policies` and search for `bunq-ynab-aws-lambda`.
 3. Enter your `BunqApiToken`, `YnabAccessToken`. You can keep `YnabBudget` as `*`.
 
 ![sar](img/sar.png)
