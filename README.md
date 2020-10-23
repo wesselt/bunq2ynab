@@ -53,6 +53,10 @@ To alter the configuration:
 }
 ```
 
+Here's a screenshot of the account and budget names in the YNAB website and the bunq app:
+
+![location of account and budget name](https://github.com/wesselt/bunq2ynab/blob/master/img/names.png?raw=true)
+
 ### Activating Sync
 
 1. After the deployment has finished, navigate to the [Lambda console](https://console.aws.amazon.com/lambda/)
