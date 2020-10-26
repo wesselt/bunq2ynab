@@ -2,10 +2,10 @@
 
 Bunq2Ynab is a Python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.
 
-You'll need a key from both bunq and YNAB to enable synchronization:
+You'll need a token from both bunq and YNAB to enable synchronization.  Both tokens are  hexadecimal and  64 characters long, like 7197c12ef0eae4572dfb85706353e6a98410b3a7bbe598726404072decd1d664.
 
 1. Create a bunq "API key" in the bunq mobile app. On the profile tab (3rd icon bottom row), click the dots to the top right, then Security & Preferences, then Developers, then API keys, then "Add API Key". Choose to "Reveal" the API key and share it.
-2. Create a YNAB "Personal Access Token" in the YNAB website through the top-left menu, then Account Settings, then Developers. Or you can follow this link straight to the Developers page: https://app.youneedabudget.com/settings/developer. **You can only see the full token when you first create it.** After that it will never be shown again in full on the developer page. The token is a hexadecimal number, the number with XXXX in it is just a placeholder.
+2. Create a YNAB "Personal Access Token" in the YNAB website through the top-left menu, then Account Settings, then Developers. Or you can follow this link straight to the Developers page: https://app.youneedabudget.com/settings/developer. **You can only see the full token when you first create it.** After that it will never be shown again. The number with XXXX is just a placeholder.
 
 The easiest way to run Bunq2Ynab is in the Amazon cloud. You can also run Bunq2Ynab on a local python installation. Both options are explained below.
 
