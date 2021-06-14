@@ -154,4 +154,7 @@ def get_payments(user_id, account_id, start_date):
         got_date = payments[-1]["date"]
         log.info("Retrieved back to {}...".format(got_date))
     # For correct duplicate calculation, return only complete days
-    return [p for p in payments if start_date <= p["date"]]
+    result = [p for p in payments if start_date <= p["date"]]
+    # Reverse to deliver oldest transaction first
+    result.reverse()
+    return result
