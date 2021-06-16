@@ -18,7 +18,7 @@ Metadata:
     LicenseUrl: LICENSE
     Labels: ["Bunq", "Ynab"]
     HomePageUrl: https://github.com/wesselt/bunq2ynab
-    SemanticVersion: 1.0.0
+    SemanticVersion: 1.1.0
     SourceCodeUrl: https://github.com/wesselt/bunq2ynab
 
 Parameters:
