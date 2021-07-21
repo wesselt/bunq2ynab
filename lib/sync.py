@@ -39,11 +39,17 @@ def matching_pairs(bunq, ynab, conf):
     return True
 
 
-def get_last_transaction_date(transactions):
-    l = [t for t in transactions if t["payee_name"] != "Starting Balance"]
-    if not l:
-        return "2000-01-01"
-    return l[-1]["date"]
+def get_last_uncleared_transaction_date(transactions, default_date):
+    return next(
+        (
+            t["date"] for t in reversed(transactions)
+            if (
+                t["payee_name"] != "Starting Balance"
+                and t["cleared"] == "uncleared"
+            )
+        ),
+        default_date
+    )
 
  
 class Sync:
@@ -126,7 +132,7 @@ class Sync:
             transfer_to = next((sp for sp in self.syncpairs
                                 if sp["iban"] == p["iban"]), None)
             transaction = ynab.get(import_id)
-            if transaction:
+            if transaction and transaction["cleared"] != "uncleared":
                 transaction["payment"] = p
             else:
                 # YNAB payee is max 50 chars 
@@ -163,9 +169,11 @@ class Sync:
                                          syncpair["ynab_account_id"], start_dt)
         log.info("Retrieved {} ynab transactions...".format(len(transactions)))
 
-        # Push start date back to latest YNAB entry
         if not get_all:
-            start_dt = min(start_dt, get_last_transaction_date(transactions))
+            # Push start date back to latest uncleared YNAB entry
+            start_dt = get_last_uncleared_transaction_date(
+                transactions, default_date=start_dt
+            )
 
         log.info("Reading bunq payments from {}...".format(start_dt))
         payments = bunq_api.get_payments(syncpair["bunq_user_id"],
