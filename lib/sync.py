@@ -39,19 +39,15 @@ def matching_pairs(bunq, ynab, conf):
     return True
 
 
-def get_last_uncleared_transaction_date(transactions, default_date):
-    return next(
-        (
-            t["date"] for t in reversed(transactions)
-            if (
-                t["payee_name"] != "Starting Balance"
-                and t["cleared"] == "uncleared"
-            )
-        ),
-        default_date
-    )
+def get_last_transaction_date(transactions):
+    for t in reversed(transactions):
+        # Ignore manually entered transactions (they're uncleared)
+        if (t["payee_name"] != "Starting Balance" and
+                t["cleared"] != "uncleared"):
+            return t["date"]
+    return "2000-01-01"
 
- 
+
 class Sync:
 
     def __init__(self):
@@ -132,6 +128,10 @@ class Sync:
             transfer_to = next((sp for sp in self.syncpairs
                                 if sp["iban"] == p["iban"]), None)
             transaction = ynab.get(import_id)
+
+            # Upload a matched uncleared transaction as if it were a new
+            # transaction.  This allows YNAB to match it with an
+            # uncleared transaction.
             if transaction and transaction["cleared"] != "uncleared":
                 transaction["payment"] = p
             else:
@@ -171,9 +171,7 @@ class Sync:
 
         if not get_all:
             # Push start date back to latest uncleared YNAB entry
-            start_dt = get_last_uncleared_transaction_date(
-                transactions, default_date=start_dt
-            )
+            start_dt = get_last_transaction_date(transactions)
 
         log.info("Reading bunq payments from {}...".format(start_dt))
         payments = bunq_api.get_payments(syncpair["bunq_user_id"],
