@@ -32,7 +32,6 @@ portmap_port = None
 sync_obj = None
 
 
-
 # ----- Synchronize with YNAB
 
 def synchronize():
@@ -160,8 +159,17 @@ def teardown_callback():
         log.error("Error removing upnp port mapping: {}".format(e))
 
 
+def on_error_wait_secs(consecutive_errors):
+    if consecutive_errors < 60:
+        return 10
+    if consecutive_errors < 120:
+        return 60
+    return 60*60
+
+
 # ----- Main loop
 try:
+    consecutive_errors = 0
     while True:
         try:
             sync_obj = sync.Sync()
@@ -177,10 +185,15 @@ try:
                 log.warning("No callback, waiting for {} minutes...".format(
                     refresh_nocallback_minutes))
                 time.sleep(refresh_nocallback_minutes*60)
+
+            consecutive_errors = 0
         except Exception as e:
             log.error("Error: {}".format(e))
             log.error(traceback.format_exc())
-            log.error("Error occured, waiting 10 seconds.")
-            time.sleep(10)
+            consecutive_errors += 1
+            wait_secs = on_error_wait_secs(consecutive_errors)
+            log.error(f"Failed {consecutive_errors} times, " +
+                f"waiting {wait_secs} seconds for retry.")
+            time.sleep(wait_secs)
 finally:
     teardown_callback()
