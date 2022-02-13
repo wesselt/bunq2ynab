@@ -108,7 +108,6 @@ def setup_callback():
             return
         callback_port = portmap_port
 
-    sync_obj.populate()
     for acc in sync_obj.get_bunq_accounts():
         url = "https://{}:{}/bunq2ynab-autosync".format(
                                                     callback_ip, callback_port)
@@ -173,6 +172,7 @@ try:
     while True:
         try:
             sync_obj = sync.Sync()
+            sync_obj.populate()
 
             setup_callback()
 
