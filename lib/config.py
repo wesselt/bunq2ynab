@@ -121,8 +121,8 @@ class Config:
 
 
     def verify(self):
-        token_regex = r"^[0-9a-f]{64}$"
-        if not re.match(token_regex, self["api_token"]):
+        bunq_token_regex = r"^[0-9a-f]{64}$"
+        if not re.match(bunq_token_regex, self["api_token"]):
             log.critical('Configuration setting "api_token" must contain ' +
                 'a bunq API key.  On the profile tab (3rd icon bottom row), ' +
                 'click the cogwheel to the top right, then Security & ' +
@@ -133,15 +133,11 @@ class Config:
                 'API key is: 7197c12ef0eae4572dfb85706353e6a98410b3a7bb' +
                 'e598726404072decd1d664')
             sys.exit(1)
-        if not re.match(token_regex, self["personal_access_token"]):
+        if len(self["personal_access_token"]) < 10:
             log.critical('Configuration setting "personal_access_token" ' +
                 'must contain a YNAB personal access token.  Create one in ' +
                 'Top Left Menu -> Account Settings -> Developers.  You can ' +
-                'only see the full token when you first create it. ' +
-                'A personal access token is 64 characters long and ' +
-                'consists of digits and lowercase a to f.  An example ' +
-                'API key is: a73ead040abb58823e926dfde4a0bf0f6c6db5d9ec' +
-                'ba7f1656762dc017c752a4')
+                'only see the full token when you first create it.')
             sys.exit(1)
 
 
