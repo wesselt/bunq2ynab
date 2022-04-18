@@ -1,4 +1,9 @@
 ### macOS ###
+
+# SAM
+.aws-sam/
+packaged.yml
+
 # General
 .DS_Store
 .AppleDouble
