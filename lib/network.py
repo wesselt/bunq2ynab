@@ -13,8 +13,6 @@ bunq_network = "185.40.108.0/22"
 
 
 def is_bunq_server(ip):
-    if ip == "172.105.76.249":
-        return True
     return ipaddress.ip_address(ip) in ipaddress.ip_network(bunq_network)
 
 
