@@ -59,10 +59,8 @@ class Sync:
             raise Exception("Sync object is already populated")
         log.info("Retrieving bunq accounts...")
         self.bunq_accounts = list(bunq_api.get_accounts())
-        log.info(self.bunq_accounts)
         log.info("Retrieving ynab accounts...")
         self.ynab_accounts = list(ynab.get_accounts())
-        log.info(self.ynab_accounts)
 
         self.confpairs = config.get("accounts", [{}])
         if not isinstance(self.confpairs, list):
