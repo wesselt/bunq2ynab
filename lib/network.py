@@ -48,16 +48,6 @@ upnp_init = False
 upnp = None
 
 
-def next_port(port):
-    min_port = 49152
-    max_port = 65535
-    if not port:
-        return random.randint(min_port, max_port)
-    if port > max_port:
-        return min_port
-    return port + 1
-
-
 def portmap_setup():
     global upnp_init, upnp
     if upnp_init:
@@ -112,7 +102,7 @@ def portmap_add(try_port, local_port):
                 return
             log.info("Port {} is already mapped, trying next port..."
                   .format(try_port))
-            try_port = next_port(try_port)
+            try_port = random.randint(1025, 65535)
 
 
 def portmap_remove(port):

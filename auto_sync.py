@@ -1,4 +1,5 @@
 import errno
+import random
 import socket
 import time
 import traceback
@@ -55,7 +56,7 @@ def bind_port():
         return serversocket, int(port)
     port = None
     for i in range(0, 128):
-        port = network.next_port(port)
+        port = random.randint(1025, 65535)
         try:
             serversocket.bind(('0.0.0.0', port))
             return serversocket, port
