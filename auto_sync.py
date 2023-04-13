@@ -112,8 +112,7 @@ def setup_callback():
     for acc in sync_obj.get_bunq_accounts():
         url = "https://{}:{}/bunq2ynab-autosync".format(
                                                     callback_ip, callback_port)
-        bunq_api.add_callback(acc["bunq_user_id"], acc["bunq_account_id"],
-            "bunq2ynab-autosync", url)
+        bunq_api.add_callback(acc["bunq_user_id"], "bunq2ynab-autosync", url)
 
 
 def wait_for_callback():
@@ -149,8 +148,7 @@ def teardown_callback():
     log.info("Cleaning up...")
     for acc in sync_obj.get_bunq_accounts():
         try:
-            bunq_api.remove_callback(acc["bunq_user_id"], 
-                acc["bunq_account_id"], "bunq2ynab-autosync")
+            bunq_api.remove_callback(acc["bunq_user_id"], "bunq2ynab-autosync")
         except Exception as e:
             log.info("Error removing callback: {}".format(e))
     try:
