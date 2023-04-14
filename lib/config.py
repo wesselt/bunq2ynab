@@ -114,7 +114,7 @@ class Config:
             sys.exit(1)
 
         if (self.config["api_token"] == "enter bunq api key here" or
-                self.config["personal_access_token"] == "enter ynab token here"):
+              self.config["personal_access_token"] == "enter ynab token here"):
             log.critical("Configuration incomplete, please edit " +
                          self.config_fn)
             sys.exit(1)
