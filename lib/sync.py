@@ -157,9 +157,12 @@ class Sync:
     def synchronize_account(self, syncpair):
         log.info("Synching {}...".format(pair_to_str(syncpair)))
 
-        get_all = config.get("all", False)
+        get_all = config.get("all")
+        get_start = config.get("start")
         if get_all:
             start_dt = "2000-01-01"
+        elif get_start:
+            start_dt = get_start
         else:
             dt = datetime.datetime.now() - datetime.timedelta(days=35)
             start_dt = dt.strftime("%Y-%m-%d")
@@ -169,7 +172,7 @@ class Sync:
                                          syncpair["ynab_account_id"], start_dt)
         log.info("Retrieved {} ynab transactions...".format(len(transactions)))
 
-        if not get_all:
+        if not get_all and not get_start:
             # Push start date back to latest uncleared YNAB entry
             start_dt = get_last_transaction_date(transactions)
 

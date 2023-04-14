@@ -21,6 +21,8 @@ class Config:
 
 
     def add_default_arguments(self):
+        self.parser.add_argument("--start", "-s",
+            help="Synchronize from a date (like 2023-12-31)")
         self.parser.add_argument("--all", "-a", action="store_true",
             help="Synchronize all instead of recent transactions")
         self.parser.add_argument("--dry", action="store_true",
@@ -139,6 +141,11 @@ class Config:
                 'Top Left Menu -> Account Settings -> Developers.  You can ' +
                 'only see the full token when you first create it.')
             sys.exit(1)
-
+        date_regex = r"^\d\d\d\d-\d\d-\d\d$"
+        if self["start"] and not re.match(date_regex, self["start"]):
+            log.critical(f'Configuration setting "start" is set to '
+                f'"{self["start"]}". '
+                f'It must be in the year-month-day format, like 2022-12-31.')
+            sys.exit(1)
 
 config = Config()
