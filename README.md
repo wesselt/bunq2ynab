@@ -111,13 +111,13 @@ python3 list_budget.py
 
 ### Manual synchronization
 
-The bunq2ynab.py script synchronizes once.
+The bunq2ynab.py script synchronizes once. You can run this from a cron job to synchronize on a schedule.
 
 ```sh
 python3 bunq2ynab.py
 ```
 
-Add `--all` to force it to synchronize all transactions. You can run this from a cron job to synchronize on a schedule.
+For the first run, you can add `--start 2022-12-31` to specify the start time, or `--all` synchronize all transactions.
 
 ### Automatic synchronization
 
