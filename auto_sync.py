@@ -40,7 +40,6 @@ def synchronize():
         log.info("Starting sync at " + time.strftime('%Y-%m-%d %H:%M:%S'))
         sync_obj.synchronize()
         log.info("Finished sync at " + time.strftime('%Y-%m-%d %H:%M:%S'))
-        log.info("")
     except Exception as e:
         log.error("Error during synching: {}".format(e))
         log.error(traceback.format_exc())

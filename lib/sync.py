@@ -187,7 +187,7 @@ class Sync:
         created, duplicates, patched = ynab.upload_transactions(
             syncpair["ynab_budget_id"], transactions)
 
-        msg = "{}: Created {} and patched {} transactions.{}\n".format(
+        msg = "{}: Created {} and patched {} transactions.{}".format(
             pair_to_str(syncpair), created, patched,
             "  There were {} duplicates.".format(duplicates)
                 if duplicates else "")
