@@ -12,16 +12,18 @@ from lib.config import config
 from lib.log import log
 
 
-# ----- Parameters
-
-refresh_callback_minutes = 8*60
-refresh_nocallback_minutes = 60 
-
-
 # ----- Parse command line arguments
 
 config.parser.add_argument("--port", type=int,
     help="TCP port number to listen to.  Default is a random port.")
+# Don't set defaults here.  A default looks like a command line parameter,
+# so lib.config would ignore an entry in config.json
+config.parser.add_argument("--wait", type=int,
+    help="Synch time when there is no callback.  Default 60 minutes (1 hour)")
+config.parser.add_argument("--interval", type=int,
+    help="Synch time with callback.  Defaults 240 minutes (4 hours)")
+config.parser.add_argument("--refresh", type=int,
+    help="Time to refresh callback setup.  Defaults 480 minutes (8 hours)")
 config.load()
 
 
@@ -115,9 +117,11 @@ def setup_callback():
 
 
 def wait_for_callback():
+    refresh = (config.get("refresh") or 8*60)*60
+    interval = (config.get("interval") or 4*60)*60
     last_sync = time.time()
-    next_refresh = time.time() + refresh_callback_minutes*60
-    next_sync = next_refresh
+    next_refresh = time.time() + refresh
+    next_sync = time.time() + interval
     while True:
         time_left = max(min(next_sync, next_refresh) - time.time(), 0)
         log.info("Waiting for callback for {}...".format(
@@ -127,7 +131,7 @@ def wait_for_callback():
             (clientsocket, address) = serversocket.accept()
             clientsocket.close()
             if not network.is_bunq_server(address[0]):
-                log.warning("Source IP not in BUNQ range".format(address[0]))
+                log.warning("Source {} not in BUNQ range".format(address[0]))
                 continue
             log.info("Incoming call from {}...".format(address[0]))
         except socket.timeout as e:
@@ -135,12 +139,13 @@ def wait_for_callback():
 
         if next_refresh <= time.time():
             return
-        elif time.time() < last_sync + 30:
+        if time.time() < last_sync + 30:
             next_sync = last_sync + 30
         else:
+            log.info("Synchronizing periodically...")
             synchronize()
             last_sync = time.time()
-            next_sync = next_refresh
+            next_sync = last_sync + interval
 
 
 def teardown_callback():
@@ -167,22 +172,25 @@ def on_error_wait_secs(consecutive_errors):
 # ----- Main loop
 try:
     consecutive_errors = 0
+    wait = (config.get("wait") or 1) * 60
+    last_sync = 0
     while True:
         try:
             sync_obj = sync.Sync()
             sync_obj.populate()
 
+            if last_sync + wait < time.time():
+                log.info("Synchronizing at start or before refresh...")
+                synchronize()
+                last_sync = time.time()
+
             setup_callback()
-
-            log.info("Starting periodic synchronization...")
-            synchronize()
-
             if callback_ip and callback_port:
                 wait_for_callback()
             else:
                 log.warning("No callback, waiting for {} minutes...".format(
-                    refresh_nocallback_minutes))
-                time.sleep(refresh_nocallback_minutes*60)
+                    wait))
+                time.sleep(wait)
 
             consecutive_errors = 0
         except Exception as e:
