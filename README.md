@@ -129,6 +129,32 @@ python3 auto_sync.py
 
 Auto sync tries to run as reliably as possible. Every 8 hours it refreshes the port forward. This way it keeps working when your ISP assigned IP changes. After refreshing the port forward, auto_synch synchronizes even if it has not received a callback.
 
+## systemd script
+
+Adding autosync as a systemd service
+
+sudo nano /etc/systemd/system/autosync.service
+
+Copy paste script below
+
+#start
+[Unit]
+Description=Autosync BUNQ2YNAB script
+
+[Service]
+User=beninho
+ExecStart=/usr/bin/python3 /pool/apps/bunq2ynab/auto_sync.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+#end
+
+sudo systemctl enable autosync.service
+sudo systemctl start autosync.service
+systemctl status autosync.service 
+
 ## Links
 
 - [Bunq API documentation](https://doc.bunq.com/)
