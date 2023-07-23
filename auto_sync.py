@@ -24,6 +24,8 @@ config.parser.add_argument("--interval", type=int,
     help="Synch time with callback.  Defaults 240 minutes (4 hours)")
 config.parser.add_argument("--refresh", type=int,
     help="Time to refresh callback setup.  Defaults 480 minutes (8 hours)")
+config.parser.add_argument("--callback-marker",
+    help="Unique marker for callbacks.  Defaults bunq2ynab-autosync.")
 config.load()
 
 
@@ -110,10 +112,11 @@ def setup_callback():
             return
         callback_port = portmap_port
 
-    for acc in sync_obj.get_bunq_accounts():
-        url = "https://{}:{}/bunq2ynab-autosync".format(
-                                                    callback_ip, callback_port)
-        bunq_api.add_callback(acc["bunq_user_id"], "bunq2ynab-autosync", url)
+    for uid in sync_obj.get_bunq_user_ids():
+        callback_marker = config.get("callback-marker") or "bunq2ynab-autosync"
+        url = "https://{}:{}/{}".format(
+                                   callback_ip, callback_port, callback_marker)
+        bunq_api.add_callback(uid, callback_marker, url)
 
 
 def wait_for_callback():
@@ -150,9 +153,10 @@ def wait_for_callback():
 
 def teardown_callback():
     log.info("Cleaning up...")
-    for acc in sync_obj.get_bunq_accounts():
+    callback_marker = config.get("callback-marker") or "bunq2ynab-autosync"
+    for uid in sync_obj.get_bunq_user_ids():
         try:
-            bunq_api.remove_callback(acc["bunq_user_id"], "bunq2ynab-autosync")
+            bunq_api.remove_callback(uid, callback_marker)
         except Exception as e:
             log.info("Error removing callback: {}".format(e))
     try:

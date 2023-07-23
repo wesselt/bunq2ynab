@@ -94,19 +94,13 @@ class Sync:
         self.populated = True
 
 
-    def get_bunq_accounts(self):
+    def get_bunq_user_ids(self):
         if not self.populated:
-            raise Exception("Get_bunq_accounts called before populate")
-        bunqpairs = []
+            raise Exception("Get_bunq_user_ids called before populate")
+        users = set()
         for syncpair in self.syncpairs:
-            if not [bp for bp in bunqpairs if
-                    bp["bunq_user_id"] == syncpair["bunq_user_id"] and
-                    bp["bunq_account_id"] == syncpair["bunq_account_id"]]:
-                bunqpairs.append({
-                    "bunq_user_id": syncpair["bunq_user_id"],
-                    "bunq_account_id": syncpair["bunq_account_id"]
-                })
-        return bunqpairs
+            users.add(syncpair["bunq_user_id"])
+        return list(users)
 
 
     # Calculate occurernce for YNAB duplicate detection
