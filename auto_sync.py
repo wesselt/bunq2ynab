@@ -173,24 +173,25 @@ def on_error_wait_secs(consecutive_errors):
 try:
     consecutive_errors = 0
     wait = (config.get("wait") or 1) * 60
-    last_sync = 0
+    next_sync = 0
     while True:
         try:
             sync_obj = sync.Sync()
             sync_obj.populate()
 
-            if last_sync + wait < time.time():
+            if next_sync < time.time():
                 log.info("Synchronizing at start or before refresh...")
                 synchronize()
-                last_sync = time.time()
+                next_sync = time.time() + wait
 
             setup_callback()
             if callback_ip and callback_port:
                 wait_for_callback()
             else:
-                log.warning("No callback, waiting for {} minutes...".format(
-                    wait))
-                time.sleep(wait)
+                time_left = max(next_sync - time.time(), 0)
+                log.warning("No callback, waiting for .{} minutes...".format(
+                    int(time_left/60)))
+                time.sleep(time_left)
 
             consecutive_errors = 0
         except Exception as e:
