@@ -10,7 +10,7 @@ from lib import network
 from lib.config import config
 from lib.state import state
 from lib.log import log
-
+import time
 
 url = "https://api.bunq.com/"
 
@@ -160,7 +160,20 @@ def log_reply(reply):
     log.debug("******************************")
 
 
+last_call_time = {'GET': 0, 'POST': 0, 'PUT': 0, 'DELETE': 0}
+# action: (calls / seconds)
+rate_limits = {'GET': (3, 3), 'POST': (5, 3), 'PUT': (2, 3), 'DELETE': (2, 3)}
+
+
 def call_requests(action, method, data_obj):
+    global last_call_time
+    current_time = time.time()
+    time_since_last_call = current_time - last_call_time[action]
+
+    limit, delay = rate_limits[action]
+    if time_since_last_call < delay:
+        time.sleep(delay - time_since_last_call)
+
     data = json.dumps(data_obj) if data_obj else ''
     headers = {
         'Cache-Control': 'no-cache',
@@ -197,6 +210,8 @@ def call(action, method, data=None):
         raise Exception(result["Error"][0]["error_description"])
     global older_url
     older_url = result.get("Pagination", {}).get("older_url")
+
+    last_call_time[method] = time.time()
     return result["Response"]
 
 
