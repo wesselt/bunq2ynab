@@ -1,6 +1,5 @@
 from lib import bunq
 from lib.log import log
-from time import sleep
 
 
 # ----- Adding a callback to the bunq account
@@ -114,7 +113,6 @@ def get_accounts():
 
 def get_notification_filters(user_id):
     method = "v1/user/{}/notification-filter-url".format(user_id)
-    sleep(1)
     return bunq.get(method)
 
 
