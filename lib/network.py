@@ -85,16 +85,28 @@ def get_portmap_external_ip():
         return None
 
 
-def portmap_add(try_port, local_port):
+def portmap_add(external_port, local_port, marker):
     if not upnp:
         return
-    if not try_port:
-        try_port = local_port
+    log.info("Adding upnp port mapping...")
+    try:
+        upnp.addportmapping(external_port, 'TCP', upnp.lanaddr, local_port,
+                            marker, '')
+        return eternal_port
+    except Exception as e:
+        log.error("Failed to map port: {}".format(e))
+
+
+# Multiply tries to find a suitable port
+def portmap_seek(local_port, marker):
+    if not upnp:
+        return
+    try_port = local_port
     log.info("Adding upnp port mapping...")
     for i in range(0, 128):
         try:
             upnp.addportmapping(try_port, 'TCP', upnp.lanaddr, local_port,
-                                'bynq2ynab-autosync', '')
+                                marker, '')
             return try_port
         except Exception as e:
             if "ConflictInMappingEntry" not in str(e):
