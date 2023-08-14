@@ -75,6 +75,9 @@ class Config:
     def get(self, name, default=None):
         if not hasattr(self, "config"):
             raise Exception("Load config before using it")
+        if "-" in name:
+            raise Exception(f"Use underscore instead of dash when "
+                            f"getting config value {name}")
         return self.config.get(name, default)
 
 
@@ -85,7 +88,7 @@ class Config:
             self.config = json.loads(resp)
             log.debug('Fetched configuration')
         except Exception as e:
-            log.critical("Error loading configuration from SSM Parameter: {}: {}"
+            log.critical("Error loading config from SSM Parameter: {}: {}"
                          .format(self.ssm_path, e))
             sys.exit(1)
 

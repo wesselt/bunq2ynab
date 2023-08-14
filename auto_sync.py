@@ -15,7 +15,9 @@ from lib.log import log
 # ----- Parse command line arguments
 
 config.parser.add_argument("--port", type=int,
-    help="TCP port number to listen to.  Default is a random port.")
+    help="TCP port number to listen to.  Default is a random port")
+config.parser.add_argument("--external-port", type=int,
+    help="TCP port number to register for callback")
 # Don't set defaults here.  A default looks like a command line parameter,
 # so lib.config would ignore an entry in config.json
 config.parser.add_argument("--wait", type=int,
@@ -25,7 +27,7 @@ config.parser.add_argument("--interval", type=int,
 config.parser.add_argument("--refresh", type=int,
     help="Time to refresh callback setup.  Defaults 480 minutes (8 hours)")
 config.parser.add_argument("--callback-marker",
-    help="Unique marker for callbacks.  Defaults bunq2ynab-autosync.")
+    help="Unique marker for callbacks.  Defaults bunq2ynab-autosync")
 config.load()
 
 
@@ -102,21 +104,27 @@ def setup_callback():
         serversocket, local_port = bind_port()
         log.info("Listening on port {0}...".format(local_port))
         serversocket.listen(5)  # max incoming calls queued
- 
+
+    marker = config.get("callback_marker") or "bunq2ynab-autosync"
+    external_port = config.get("external_port")
     if not using_portmap:
-        callback_port = local_port
+        callback_port = external_port or local_port
+    elif external_port:
+        log.info(f"Forwarding specified port {external_port}...")
+        network.portmap_add(external_port, local_port, marker)
+        callback_port = external_port  # Regardless of success
     else:
-        portmap_port = network.portmap_add(portmap_port, local_port)
+        log.info("Looking for port to forward...")
+        portmap_port = network.portmap_seek(local_port, marker)
         if not portmap_port:
             log.error("Failed to map port, not registering callback.")
             return
+        log.info(f"Succesfully forwarded port {portmap_port}")
         callback_port = portmap_port
 
     for uid in sync_obj.get_bunq_user_ids():
-        callback_marker = config.get("callback-marker") or "bunq2ynab-autosync"
-        url = "https://{}:{}/{}".format(
-                                   callback_ip, callback_port, callback_marker)
-        bunq_api.add_callback(uid, callback_marker, url)
+        url = "https://{}:{}/{}".format(callback_ip, callback_port, marker)
+        bunq_api.add_callback(uid, marker, url)
 
 
 def wait_for_callback():
@@ -153,7 +161,7 @@ def wait_for_callback():
 
 def teardown_callback():
     log.info("Cleaning up...")
-    callback_marker = config.get("callback-marker") or "bunq2ynab-autosync"
+    callback_marker = config.get("callback_marker") or "bunq2ynab-autosync"
     for uid in sync_obj.get_bunq_user_ids():
         try:
             bunq_api.remove_callback(uid, callback_marker)
