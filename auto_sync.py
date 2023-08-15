@@ -122,6 +122,9 @@ def setup_callback():
         log.info(f"Succesfully forwarded port {portmap_port}")
         callback_port = portmap_port
 
+    if callback_port != 443:
+        log.warning(f"Callbacks port is {callback_port}.  Callbacks are "
+                    f"broken for ports other than 443")
     for uid in sync_obj.get_bunq_user_ids():
         url = "https://{}:{}/{}".format(callback_ip, callback_port, marker)
         bunq_api.add_callback(uid, marker, url)
@@ -141,10 +144,11 @@ def wait_for_callback():
         try:
             (clientsocket, address) = serversocket.accept()
             clientsocket.close()
-            if not network.is_bunq_server(address[0]):
-                log.warning("Source {} not in BUNQ range".format(address[0]))
+            source_ip = address[0]
+            log.info("Incoming call from {}...".format(source_ip))
+            if not network.is_bunq_server(source_ip):
+                log.warning(f"Source {source_ip} not in BUNQ range")
                 continue
-            log.info("Incoming call from {}...".format(address[0]))
         except socket.timeout as e:
             pass
 
