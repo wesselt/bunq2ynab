@@ -174,7 +174,8 @@ class Sync:
                 # Manual clear combined with timezone can put a transaction
                 # in the UTC future
                 # https://github.com/wesselt/bunq2ynab/issues/46
-                log.warn(f"Last YNAB transaction {start_dt} is in the future")
+                log.warning(f"Last YNAB transaction {start_dt} is in the "
+                            f"future.  Using today instead.")
                 start_dt = today_dt
 
         log.info("Reading bunq payments from {}...".format(start_dt))
