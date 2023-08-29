@@ -86,8 +86,9 @@ def setup_callback():
         log.info("Host has a public IP...")
         callback_ip = local_ip
     elif config.get("port"):
-        log.info("Host has a private IP, port specified, configure forward " +
-                 "manually...")
+        log.info("Host has a private IP.  A port is specified so we will not "
+                 "attempt to map a port.  Remember to configure forward "
+                 "manually.")
         callback_ip = network.get_public_ip()
     else:
         log.info("Host has a private IP, trying upnp port mapping...")
