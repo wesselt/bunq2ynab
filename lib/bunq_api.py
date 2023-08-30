@@ -100,7 +100,7 @@ def get_accounts_for_user(u):
             iban = [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0]
             yield {
                 "bunq_user_id": u["id"],
-                "bunq_user_name": u["display_name"],
+                "bunq_user_name": u.get("display_name"),
                 "bunq_account_id": a["id"],
                 "bunq_account_name": a["description"],
                 "iban": iban
@@ -109,7 +109,7 @@ def get_accounts_for_user(u):
 
 def get_accounts():
     for u in [first_value(u) for u in bunq.get("v1/user")]:
-        if u["status"] == "ACTIVE":
+        if 'requested_by_user' in u or u["status"] == "ACTIVE":
             yield from get_accounts_for_user(u)
 
 
