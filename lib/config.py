@@ -59,7 +59,7 @@ class Config:
         else:
             self.config_fn = helpers.fname_to_path("config.json")
 
-        has_oauth_args = args.oauth_client_id or args.oauth_client_secret or args.oauth_server_port
+        has_oauth_args = args.oauth_client_id or args.oauth_client_secret
 
         if has_oauth_args:
             self.config = {}
