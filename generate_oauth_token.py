@@ -9,7 +9,8 @@ import webbrowser
 import os
 import sys
 from urllib.parse import urlparse, parse_qs, urlencode
-import requests
+import uuid
+from lib import bunq_api
 
 
 class MyRequestHandler(BaseHTTPRequestHandler):
@@ -39,7 +40,7 @@ class MyRequestHandler(BaseHTTPRequestHandler):
 bunq_base_url = "https://oauth.bunq.com/auth"
 client_id = os.environ["CLIENT_ID"]
 client_secret = os.environ["CLIENT_SECRET"]
-state = "kerk"
+state = str(uuid.uuid4())
 port = 3000
 redirect_url = f"http://localhost:{port}"
 
@@ -72,32 +73,11 @@ if state != httpd.response_state:
     sys.exit(1)
 
 
-bunq_base_token_url = "https://api.oauth.bunq.com/v1/token"
-bunq_token_params = {
-    "grant_type": "authorization_code",
-    "code": httpd.response_code,
-    "redirect_uri": redirect_url,
-    "client_id": client_id,
-    "client_secret": client_secret,
-}
-
-# Encode the parameters
-encoded_token_params = urlencode(bunq_token_params)
-
-# From https://beta.doc.bunq.com/basics/oauth#token-exchange
-# construct the complete URL with parameters
-bunq_token_url = f"{bunq_base_token_url}?{encoded_token_params}"
-
-response = requests.post(bunq_token_url)
-
-
-if response.status_code != 200:
-    print(
-        f"Token request failed with status code: {response.status_code} with content: {response.text}"
-    )
-    sys.exit(1)
-
-
-access_token = response.json()["access_token"]
+access_token = bunq_api.put_token_exchange(
+    code=httpd.response_code,
+    redirect_url=redirect_url,
+    client_id=client_id,
+    client_secret=client_secret,
+)
 
 print(f"You have successfully created an access token for Bunq: {access_token}")
