@@ -12,7 +12,6 @@ from lib.log import log
 
 
 class Config:
-    config_fn = helpers.fname_to_path("config.json")
     ssm_path = "bunq2ynab-config"
 
     def __init__(self):
@@ -21,6 +20,12 @@ class Config:
 
 
     def add_default_arguments(self):
+        self.parser.add_argument("--config", "-c",
+            help="Configuration file (default: config.json"),
+        self.parser.add_argument("--oauth-client-id",
+            help="OAuth client ID"),
+        self.parser.add_argument("--oauth-client-secret",
+            help="OAuth client secret"),
         self.parser.add_argument("--start", "-s",
             help="Synchronize from a date (like 2023-12-31)")
         self.parser.add_argument("--all", "-a", action="store_true",
@@ -46,6 +51,11 @@ class Config:
 
         if os.environ.get("LOG_LEVEL"):
             log_module.set_log_level("environment", os.environ["LOG_LEVEL"])
+
+        if args.config:
+            self.config_fn = args.config
+        else:
+            self.config_fn = helpers.fname_to_path("config.json")
 
         if os.environ.get("AWS_REGION"):
             self.read_ssm_config()
