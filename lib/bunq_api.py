@@ -159,8 +159,8 @@ def get_payments(user_id, account_id, start_date):
     result.reverse()
     return result
 
+# From https://beta.doc.bunq.com/basics/oauth#token-exchange
 def put_token_exchange(code, redirect_url, client_id, client_secret):
-    # https://beta.doc.bunq.com/basics/oauth#token-exchange
     bunq_base_token_url = "https://api.oauth.bunq.com/v1/token"
     bunq_token_params = {
         "grant_type": "authorization_code",
@@ -179,3 +179,17 @@ def put_token_exchange(code, redirect_url, client_id, client_secret):
 
     response = requests.post(bunq_token_url)
     return response.json()['access_token']
+
+# From https://beta.doc.bunq.com/basics/oauth#authorization-request
+def get_oauth_url(client_id, redirect_url, state):
+    base_url = "https://oauth.bunq.com/auth"
+    params = {
+        "response_type": "code",
+        "client_id": client_id,
+        "redirect_uri": redirect_url,
+        "state": state,
+    }
+    # Encode the parameters
+    encoded_params = urlencode(params)
+    url = f"{base_url}?{encoded_params}"
+    return url

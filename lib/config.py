@@ -26,6 +26,8 @@ class Config:
             help="OAuth client ID"),
         self.parser.add_argument("--oauth-client-secret",
             help="OAuth client secret"),
+        self.parser.add_argument("--oauth-server-port", default=3000, type=int,
+            help="OAuth server port (default: 3000)"),
         self.parser.add_argument("--start", "-s",
             help="Synchronize from a date (like 2023-12-31)")
         self.parser.add_argument("--all", "-a", action="store_true",
@@ -57,10 +59,15 @@ class Config:
         else:
             self.config_fn = helpers.fname_to_path("config.json")
 
-        if os.environ.get("AWS_REGION"):
-            self.read_ssm_config()
+        has_oauth_args = args.oauth_client_id or args.oauth_client_secret or args.oauth_server_port
+
+        if has_oauth_args:
+            self.config = {}
         else:
-            self.read_json_config()
+            if os.environ.get("AWS_REGION"):
+                self.read_ssm_config()
+            else:
+                self.read_json_config()
 
         # Override config.json with command line arguments
         for k, v in vars(args).items():
@@ -71,7 +78,8 @@ class Config:
         if config["log_level"]:
             log_module.set_log_level("file config.json", config["log_level"])
 
-        self.verify()
+        if not has_oauth_args:
+            self.verify()
 
 
     def __getitem__(self, name):
