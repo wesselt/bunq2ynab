@@ -11,6 +11,7 @@ import sys
 from urllib.parse import urlparse, parse_qs, urlencode
 import uuid
 from lib import bunq_api
+from lib.config import config
 
 
 class MyRequestHandler(BaseHTTPRequestHandler):
@@ -37,33 +38,24 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         )
 
 
-bunq_base_url = "https://oauth.bunq.com/auth"
-client_id = os.environ["CLIENT_ID"]
-client_secret = os.environ["CLIENT_SECRET"]
+config.load()
+
+client_id = config["oauth_client_id"]
+client_secret = config["oauth_client_secret"]
+server_port = config["oauth_server_port"]
 state = str(uuid.uuid4())
-port = 3000
-redirect_url = f"http://localhost:{port}"
+redirect_url = f"http://localhost:{server_port}"
 
-bunq_params = {
-    "response_type": "code",
-    "client_id": client_id,
-    "redirect_uri": redirect_url,
-    "state": state,
-}
+webbrowser.open(bunq_api.get_oauth_url(
+    client_id=client_id,
+    redirect_url=redirect_url,
+    state=state,
+))
 
-# Encode the parameters
-encoded_params = urlencode(bunq_params)
-
-# From https://beta.doc.bunq.com/basics/oauth#authorization-request
-# construct the complete URL with parameters
-bunq_url = f"{bunq_base_url}?{encoded_params}"
-
-webbrowser.open(bunq_url)
-
-server_address = ("", port)
+server_address = ("localhost", server_port)
 httpd = HTTPServer(server_address, MyRequestHandler)
 
-print(f"Starting server on port {port}...")
+print(f"Starting server on port {server_port}...")
 httpd.handle_request()
 
 if state != httpd.response_state:
