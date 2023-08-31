@@ -16,7 +16,15 @@ from lib.config import config
 
 
 class MyRequestHandler(BaseHTTPRequestHandler):
-    def __init__(self, oauth_state, oauth_redirect_url, *args, **kwargs):
+    def __init__(
+        self,
+        oauth_state,
+        oauth_client_id,
+        oauth_client_secret,
+        oauth_redirect_url,
+        *args,
+        **kwargs,
+    ):
         self.oauth_state = oauth_state
         self.oauth_client_id = oauth_client_id
         self.oauth_client_secret = oauth_client_secret
@@ -84,7 +92,13 @@ webbrowser.open(
 )
 
 server_address = ("localhost", server_port)
-handler = partial(MyRequestHandler, oauth_state, oauth_redirect_url)
+handler = partial(
+    MyRequestHandler,
+    oauth_state,
+    oauth_client_id,
+    oauth_client_secret,
+    oauth_redirect_url,
+)
 httpd = HTTPServer(server_address, handler)
 
 print(f"Starting server on port {server_port}...")
