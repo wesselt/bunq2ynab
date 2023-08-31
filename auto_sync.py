@@ -12,16 +12,22 @@ from lib.config import config
 from lib.log import log
 
 
-# ----- Parameters
-
-refresh_callback_minutes = 8*60
-refresh_nocallback_minutes = 60 
-
-
 # ----- Parse command line arguments
 
 config.parser.add_argument("--port", type=int,
-    help="TCP port number to listen to.  Default is a random port.")
+    help="TCP port number to listen to.  Default is a random port")
+config.parser.add_argument("--external-port", type=int,
+    help="TCP port number to register for callback")
+# Don't set defaults here.  A default looks like a command line parameter,
+# so lib.config would ignore an entry in config.json
+config.parser.add_argument("--wait", type=int,
+    help="Synch time when there is no callback.  Default 60 minutes (1 hour)")
+config.parser.add_argument("--interval", type=int,
+    help="Synch time with callback.  Defaults 240 minutes (4 hours)")
+config.parser.add_argument("--refresh", type=int,
+    help="Time to refresh callback setup.  Defaults 480 minutes (8 hours)")
+config.parser.add_argument("--callback-marker",
+    help="Unique marker for callbacks.  Defaults bunq2ynab-autosync")
 config.load()
 
 
@@ -80,8 +86,9 @@ def setup_callback():
         log.info("Host has a public IP...")
         callback_ip = local_ip
     elif config.get("port"):
-        log.info("Host has a private IP, port specified, configure forward " +
-                 "manually...")
+        log.info("Host has a private IP.  A port is specified so we will not "
+                 "attempt to map a port.  Remember to configure forward "
+                 "manually.")
         callback_ip = network.get_public_ip()
     else:
         log.info("Host has a private IP, trying upnp port mapping...")
@@ -98,26 +105,38 @@ def setup_callback():
         serversocket, local_port = bind_port()
         log.info("Listening on port {0}...".format(local_port))
         serversocket.listen(5)  # max incoming calls queued
- 
+
+    marker = config.get("callback_marker") or "bunq2ynab-autosync"
+    external_port = config.get("external_port")
     if not using_portmap:
-        callback_port = local_port
+        callback_port = external_port or local_port
+    elif external_port:
+        log.info(f"Forwarding specified port {external_port}...")
+        network.portmap_add(external_port, local_port, marker)
+        callback_port = external_port  # Regardless of success
     else:
-        portmap_port = network.portmap_add(portmap_port, local_port)
+        log.info("Looking for port to forward...")
+        portmap_port = network.portmap_seek(local_port, marker)
         if not portmap_port:
             log.error("Failed to map port, not registering callback.")
             return
+        log.info(f"Succesfully forwarded port {portmap_port}")
         callback_port = portmap_port
 
-    for acc in sync_obj.get_bunq_accounts():
-        url = "https://{}:{}/bunq2ynab-autosync".format(
-                                                    callback_ip, callback_port)
-        bunq_api.add_callback(acc["bunq_user_id"], "bunq2ynab-autosync", url)
+    if callback_port != 443:
+        log.warning(f"Callbacks port is {callback_port}.  Callbacks are "
+                    f"broken for ports other than 443")
+    for uid in sync_obj.get_bunq_user_ids():
+        url = "https://{}:{}/{}".format(callback_ip, callback_port, marker)
+        bunq_api.add_callback(uid, marker, url)
 
 
 def wait_for_callback():
+    refresh = (config.get("refresh") or 8*60)*60
+    interval = (config.get("interval") or 4*60)*60
     last_sync = time.time()
-    next_refresh = time.time() + refresh_callback_minutes*60
-    next_sync = next_refresh
+    next_refresh = time.time() + refresh
+    next_sync = time.time() + interval
     while True:
         time_left = max(min(next_sync, next_refresh) - time.time(), 0)
         log.info("Waiting for callback for {}...".format(
@@ -126,28 +145,31 @@ def wait_for_callback():
         try:
             (clientsocket, address) = serversocket.accept()
             clientsocket.close()
-            if not network.is_bunq_server(address[0]):
-                log.warning("Source IP not in BUNQ range".format(address[0]))
+            source_ip = address[0]
+            log.info("Incoming call from {}...".format(source_ip))
+            if not network.is_bunq_server(source_ip):
+                log.warning(f"Source {source_ip} not in BUNQ range")
                 continue
-            log.info("Incoming call from {}...".format(address[0]))
         except socket.timeout as e:
             pass
 
         if next_refresh <= time.time():
             return
-        elif time.time() < last_sync + 30:
+        if time.time() < last_sync + 30:
             next_sync = last_sync + 30
         else:
+            log.info("Synchronizing periodically...")
             synchronize()
             last_sync = time.time()
-            next_sync = next_refresh
+            next_sync = last_sync + interval
 
 
 def teardown_callback():
     log.info("Cleaning up...")
-    for acc in sync_obj.get_bunq_accounts():
+    callback_marker = config.get("callback_marker") or "bunq2ynab-autosync"
+    for uid in sync_obj.get_bunq_user_ids():
         try:
-            bunq_api.remove_callback(acc["bunq_user_id"], "bunq2ynab-autosync")
+            bunq_api.remove_callback(uid, callback_marker)
         except Exception as e:
             log.info("Error removing callback: {}".format(e))
     try:
@@ -167,22 +189,26 @@ def on_error_wait_secs(consecutive_errors):
 # ----- Main loop
 try:
     consecutive_errors = 0
+    wait = (config.get("wait") or 1) * 60
+    next_sync = 0
     while True:
         try:
             sync_obj = sync.Sync()
             sync_obj.populate()
 
+            if next_sync < time.time():
+                log.info("Synchronizing at start or before refresh...")
+                synchronize()
+                next_sync = time.time() + wait
+
             setup_callback()
-
-            log.info("Starting periodic synchronization...")
-            synchronize()
-
             if callback_ip and callback_port:
                 wait_for_callback()
             else:
-                log.warning("No callback, waiting for {} minutes...".format(
-                    refresh_nocallback_minutes))
-                time.sleep(refresh_nocallback_minutes*60)
+                time_left = max(next_sync - time.time(), 0)
+                log.warning("No callback, waiting for .{} minutes...".format(
+                    int(time_left/60)))
+                time.sleep(time_left)
 
             consecutive_errors = 0
         except Exception as e:

@@ -14,9 +14,9 @@ def add_callbacks(sync):
     if not url:
         return
     log.info("Adding callbacks...")
-    for acc in sync.get_bunq_accounts():
-        bunq_api.add_callback(acc["bunq_user_id"], acc["bunq_account_id"],
-                              "bunq2ynab-lambda", url)
+    for uid in sync.get_bunq_user_ids():
+        callback_marker = config.get("callback-marker") or "bunq2ynab-autosync"
+        bunq_api.add_callback(uid, callback_marker, url)
 
 
 def get_iban_from_event(event):

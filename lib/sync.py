@@ -94,19 +94,13 @@ class Sync:
         self.populated = True
 
 
-    def get_bunq_accounts(self):
+    def get_bunq_user_ids(self):
         if not self.populated:
-            raise Exception("Get_bunq_accounts called before populate")
-        bunqpairs = []
+            raise Exception("Get_bunq_user_ids called before populate")
+        users = set()
         for syncpair in self.syncpairs:
-            if not [bp for bp in bunqpairs if
-                    bp["bunq_user_id"] == syncpair["bunq_user_id"] and
-                    bp["bunq_account_id"] == syncpair["bunq_account_id"]]:
-                bunqpairs.append({
-                    "bunq_user_id": syncpair["bunq_user_id"],
-                    "bunq_account_id": syncpair["bunq_account_id"]
-                })
-        return bunqpairs
+            users.add(syncpair["bunq_user_id"])
+        return list(users)
 
 
     # Calculate occurernce for YNAB duplicate detection
@@ -164,7 +158,7 @@ class Sync:
         elif get_start:
             start_dt = get_start
         else:
-            dt = datetime.datetime.now() - datetime.timedelta(days=35)
+            dt = datetime.datetime.utcnow() - datetime.timedelta(days=35)
             start_dt = dt.strftime("%Y-%m-%d")
 
         log.info("Reading ynab transactions from {}...".format(start_dt))
@@ -175,6 +169,14 @@ class Sync:
         if not get_all and not get_start:
             # Push start date back to latest uncleared YNAB entry
             start_dt = get_last_transaction_date(transactions)
+            today_dt = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+            if today_dt < start_dt:
+                # Manual clear combined with timezone can put a transaction
+                # in the UTC future
+                # https://github.com/wesselt/bunq2ynab/issues/46
+                log.warning(f"Last YNAB transaction {start_dt} is in the "
+                            f"future.  Using today instead.")
+                start_dt = today_dt
 
         log.info("Reading bunq payments from {}...".format(start_dt))
         payments = bunq_api.get_payments(syncpair["bunq_user_id"],
