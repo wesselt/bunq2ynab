@@ -160,14 +160,14 @@ def get_payments(user_id, account_id, start_date):
     return result
 
 # From https://beta.doc.bunq.com/basics/oauth#token-exchange
-def put_token_exchange(code, redirect_url, client_id, client_secret):
+def put_token_exchange(code, oauth_client_id, oauth_client_secret, oauth_redirect_url):
     bunq_base_token_url = "https://api.oauth.bunq.com/v1/token"
     bunq_token_params = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": redirect_url,
-        "client_id": client_id,
-        "client_secret": client_secret,
+        "client_id": oauth_client_id,
+        "client_secret": oauth_client_secret,
+        "redirect_uri": oauth_redirect_url,
     }
 
     # Encode the parameters
@@ -181,13 +181,13 @@ def put_token_exchange(code, redirect_url, client_id, client_secret):
     return response.json()['access_token']
 
 # From https://beta.doc.bunq.com/basics/oauth#authorization-request
-def get_oauth_url(client_id, redirect_url, state):
+def get_oauth_url(oauth_state, oauth_client_id, oauth_redirect_url):
     base_url = "https://oauth.bunq.com/auth"
     params = {
         "response_type": "code",
-        "client_id": client_id,
-        "redirect_uri": redirect_url,
-        "state": state,
+        "state": oauth_state,
+        "client_id": oauth_client_id,
+        "redirect_uri": oauth_redirect_url,
     }
     # Encode the parameters
     encoded_params = urlencode(params)
