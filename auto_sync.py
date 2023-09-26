@@ -212,12 +212,15 @@ try:
 
             consecutive_errors = 0
         except Exception as e:
-            log.error("Error: {}".format(e))
-            log.error(traceback.format_exc())
+            short = "Bunq2ynab autosync error: {}".format(e)
+            descr = traceback.format_exc()
+            log.error(short)
+            log.error(descr)
             consecutive_errors += 1
             wait_secs = on_error_wait_secs(consecutive_errors)
             log.error(f"Failed {consecutive_errors} times, " +
                 f"waiting {wait_secs} seconds for retry.")
+            network.send_mail(short, descr)
             time.sleep(wait_secs)
 finally:
     teardown_callback()

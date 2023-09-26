@@ -1,8 +1,10 @@
 import ipaddress
 import random
 import requests
+import smtplib
 import socket
 
+from lib.config import config
 from lib.log import log
 
 
@@ -127,3 +129,34 @@ def portmap_remove(port):
             log.error("Failed to remove upnp port mapping.")
     except Exception as e:
         log.error("Error removing upnp port mapping: {0}".format(e))
+
+
+def send_mail(subject, body):
+    try:
+        mail_to = config.get("smtp_to")
+        server = config.get("smtp_server")
+        if not mail_to or not server:
+            log.info("smtp_to or smtp_server not set, not sending email")
+            return
+        user = config.get("smtp_user")
+        password = config.get("smtp_password")
+        mail_from = config.get("smtp_from", "bunq2ynab@" + get_hostname())
+
+        email_text = f"""\
+From: {mail_from}
+To: {mail_to}
+Subject: {subject}
+
+{body}
+"""
+        smtp_server = smtplib.SMTP_SSL(server, 465)
+        smtp_server.ehlo()
+        if user:
+            smtp_server.login(user, password)
+        else:
+            log.info("smtp_user not set, not authenticating to server")
+        smtp_server.sendmail(mail_from, mail_to.split(","), email_text)
+        smtp_server.close()
+        log.info("Email sent successfully!")
+    except Exception as e:
+        log.error("Error sending email: {}".format(e))
