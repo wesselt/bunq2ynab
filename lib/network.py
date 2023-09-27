@@ -8,8 +8,12 @@ from lib.config import config
 from lib.log import log
 
 
-# Endpoint to determine our public facing IP for device-server
-public_ip_url = "http://ip.42.pl/raw"
+# Endpoints to determine our public facing IP for device-server
+public_ip_urls = [
+    "http://ip.42.pl/raw",
+    "https://api.ipify.org",
+    "https://api.seeip.org",
+]
 # Bunq server address range
 bunq_network = "185.40.108.0/22"
 
@@ -35,8 +39,18 @@ def get_public_ip():
     external_ip = get_portmap_external_ip()
     if external_ip:
         return external_ip
-    log.info("Retrieving public IP from {}...".format(public_ip_url))
-    return requests.get(public_ip_url).text
+    for url in public_ip_urls:
+        log.info(f"Retrieving public IP from {url}...")
+        try:
+            result = requests.get(url, timeout=3).text
+            if ipaddress.ip_address(result):
+                log.info(f"Got public IP: {result}")
+                return result
+        # Just "except" would catch KeyboardInterrupt and others
+        except Exception as e:
+            log.error(f"Public API {url} failed: {e}")
+            pass
+    raise Exception("Unable to determine public IP")
 
 
 def get_hostname():
@@ -138,8 +152,9 @@ def send_mail(subject, body):
         if not mail_to or not server:
             log.info("smtp_to or smtp_server not set, not sending email")
             return
+        log.info("Sending exception email...")
         user = config.get("smtp_user")
-        password = config.get("smtp_password")
+        password = config.get("smtp_password", "")
         mail_from = config.get("smtp_from", "bunq2ynab@" + get_hostname())
 
         email_text = f"""\
