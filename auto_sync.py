@@ -217,14 +217,14 @@ try:
             log.error(short)
             log.error(descr)
             consecutive_errors += 1
-            wait_secs = on_error_wait_secs(consecutive_errors)
-            log.error(f"Failed {consecutive_errors} times, " +
-                f"waiting {wait_secs} seconds for retry.")
             mail_after_errors = int(config.get("mail_after_errors", 5))
             if mail_after_errors <= consecutive_errors:
                 network.send_mail(short, descr)
             else:
                 log.info(f"No mail until {mail_after_errors} errors")
+            wait_secs = on_error_wait_secs(consecutive_errors)
+            log.error(f"Failed {consecutive_errors} times, " +
+                f"waiting {wait_secs} seconds for retry.")
             time.sleep(wait_secs)
 finally:
     teardown_callback()
