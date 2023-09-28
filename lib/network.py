@@ -147,13 +147,13 @@ def portmap_remove(port):
 
 def send_mail(subject, body):
     try:
-        mail_to = config.get("smtp_to")
+        user = config.get("smtp_user")
         server = config.get("smtp_server")
-        if not mail_to or not server:
-            log.info("smtp_to or smtp_server not set, not sending email")
+        if not user or not server:
+            log.info("smtp_user or smtp_server not set, not sending email")
             return
         log.info("Sending exception email...")
-        user = config.get("smtp_user")
+        mail_to = config.get("smtp_to", user)
         password = config.get("smtp_password", "")
         mail_from = config.get("smtp_from", "bunq2ynab@" + get_hostname())
 
@@ -166,10 +166,10 @@ Subject: {subject}
 """
         smtp_server = smtplib.SMTP_SSL(server, 465)
         smtp_server.ehlo()
-        if user:
+        if password:
             smtp_server.login(user, password)
         else:
-            log.info("smtp_user not set, not authenticating to server")
+            log.info("smtp_password not set, not authenticating to server")
         smtp_server.sendmail(mail_from, mail_to.split(","), email_text)
         smtp_server.close()
         log.info("Email sent successfully!")
