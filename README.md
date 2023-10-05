@@ -129,6 +129,26 @@ python3 auto_sync.py
 
 Auto sync tries to run as reliably as possible. Every 8 hours it refreshes the port forward. This way it keeps working when your ISP assigned IP changes. After refreshing the port forward, auto_synch synchronizes even if it has not received a callback.
 
+### Email on error
+
+These configuration settings configure the email capability:
+
+```json
+{
+  "smtp_user": "example@gmail.com",
+  "smtp_password": "xxx",
+  "smtp_server": "smtp.google.com"
+}
+```
+
+Optionally you can configure number of errors that occur before a mail is sent (the default is 5.)  You can also specify the email to and from:
+
+```json
+  "mail_after_errors": 1,
+  "smtp_from": "bunq2ynab@some.where",
+  "smtp_to": "example@gmail.com"
+```
+
 ## systemd script
 
 Adding autosync as a systemd service
