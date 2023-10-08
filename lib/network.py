@@ -153,6 +153,8 @@ def send_mail(subject, body):
             log.info("smtp_user or smtp_server not set, not sending email")
             return
         log.info("Sending exception email...")
+        port = int(config.get("smtp_port", 465))
+        log.info(f"Using port {port}...")
         mail_to = config.get("smtp_to", user)
         password = config.get("smtp_password", "")
         mail_from = config.get("smtp_from", "bunq2ynab@" + get_hostname())
@@ -164,9 +166,14 @@ Subject: {subject}
 
 {body}
 """
-        smtp_server = smtplib.SMTP_SSL(server, 465)
+        if port == 25:
+            smtp_server = smtplib.SMTP(server, port=port, timeout=10)
+        else:
+            smtp_server = smtplib.SMTP_SSL(server, port=port, timeout=10)
         smtp_server.ehlo()
         if password:
+            if port == 25:
+                smtp_server.starttls()
             smtp_server.login(user, password)
         else:
             log.info("smtp_password not set, not authenticating to server")
