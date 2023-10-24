@@ -26,6 +26,8 @@ config.parser.add_argument("--interval", type=int,
     help="Synch time with callback.  Defaults 240 minutes (4 hours)")
 config.parser.add_argument("--refresh", type=int,
     help="Time to refresh callback setup.  Defaults 480 minutes (8 hours)")
+config.parser.add_argument("--callback-host",
+    help="Hostname to use in callback.  Defaults to host public IP")
 config.parser.add_argument("--callback-marker",
     help="Unique marker for callbacks.  Defaults bunq2ynab-autosync")
 config.load()
@@ -127,7 +129,8 @@ def setup_callback():
         log.warning(f"Callbacks port is {callback_port}.  Callbacks are "
                     f"broken for ports other than 443")
     for uid in sync_obj.get_bunq_user_ids():
-        url = "https://{}:{}/{}".format(callback_ip, callback_port, marker)
+        callback_host = config.get("callback_host") or callback_ip
+        url = "https://{}:{}/{}".format(callback_host, callback_port, marker)
         bunq_api.add_callback(uid, marker, url)
 
 
