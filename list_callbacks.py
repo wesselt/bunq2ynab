@@ -31,8 +31,15 @@ def process_account(u, ac):
     print_notification_filter(nfs)
 
 
-def process_user(u):
-    print("Callbacks for user {}:".format(u["display_name"]))
+def process_user(k, u):
+    if k == "UserApiKey":
+        #x = print(next(iter(v["requested_by_user"].values())))
+        #print(x)
+        #name = x["display_name"]
+        name = next(iter(v["requested_by_user"].values()))["display_name"]
+    else:
+        name = u["display_name"]
+    print(f"Callbacks for user {name}:")
     method = "v1/user/{}/notification-filter-url".format(u["id"])
     nfs = bunq.get(method)
     print_notification_filter(nfs)
@@ -47,4 +54,4 @@ method = "v1/user"
 users = bunq.get(method)
 for u in users:
     for k, v in u.items():
-        process_user(v)
+        process_user(k, v)
