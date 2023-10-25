@@ -182,10 +182,10 @@ def teardown_callback():
 
 
 def on_error_wait_secs(consecutive_errors):
-    if consecutive_errors < 60:
-        return 10
-    if consecutive_errors < 120:
+    if consecutive_errors < 3:
         return 60
+    if consecutive_errors < 6:
+        return 5*60
     return 60*60
 
 
