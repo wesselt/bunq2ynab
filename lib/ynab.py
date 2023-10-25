@@ -33,7 +33,7 @@ def log_reply(reply):
     if reply.headers["Content-Type"].startswith("application/json"):
         log.debug(json.dumps(reply.json(), indent=2))
     else:
-        log.debut(reply.text)
+        log.debug(reply.text)
     log.debug("******************************")
 
 
