@@ -19,7 +19,8 @@ bunq_network = "185.40.108.0/22"
 
 
 def is_bunq_server(ip):
-    return ipaddress.ip_address(ip) in ipaddress.ip_network(bunq_network)
+    ip = ipaddress.ip_address(ip)
+    return ip in ipaddress.ip_network(bunq_network) or ip.is_loopback
 
 
 def get_local_ip():
