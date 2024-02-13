@@ -34,7 +34,7 @@ config.load()
 
 
 serversocket = None
-callback_ip = None
+callback_host = None
 callback_port = None
 local_port = None
 portmap_port = None
@@ -78,28 +78,30 @@ def bind_port():
 # ----- Setup callback, wait for callback, teardown
 
 def setup_callback():
-    global serversocket, callback_ip, callback_port, local_port, portmap_port
+    global serversocket, callback_host, callback_port, local_port, portmap_port
 
     # Don't try to map ports if we have a public IP
-    callback_ip = callback_port = None
+    callback_host = callback_port = None
     using_portmap = False
-    local_ip = network.get_local_ip()
-    if not network.is_private_ip(local_ip):
-        log.info("Host has a public IP...")
-        callback_ip = local_ip
-    elif config.get("port"):
-        log.info("Host has a private IP.  A port is specified so we will not "
-                 "attempt to map a port.  Remember to configure forward "
-                 "manually.")
-        callback_ip = network.get_public_ip()
-    else:
-        log.info("Host has a private IP, trying upnp port mapping...")
-        network.portmap_setup()
-        network.portmap_search()
-        callback_ip = network.get_public_ip()
-        using_portmap = True
+    callback_host = config.get("callback_host")
+    if not callback_host:
+        local_ip = network.get_local_ip()
+        if not network.is_private_ip(local_ip):
+            log.info("Host has a public IP...")
+            callback_host = local_ip
+        elif config.get("port"):
+            log.info("Host has a private IP.  A port is specified so we will not "
+                     "attempt to map a port.  Remember to configure forward "
+                     "manually.")
+            callback_host = network.get_public_ip()
+        else:
+            log.info("Host has a private IP, trying upnp port mapping...")
+            network.portmap_setup()
+            network.portmap_search()
+            callback_host = network.get_public_ip()
+            using_portmap = True
 
-    if not callback_ip:
+    if not callback_host:
         log.error("No public IP found, not registering callback.")
         return
 
@@ -129,7 +131,6 @@ def setup_callback():
         log.warning(f"Callbacks port is {callback_port}.  Callbacks are "
                     f"broken for ports other than 443")
     for uid in sync_obj.get_bunq_user_ids():
-        callback_host = config.get("callback_host") or callback_ip
         url = "https://{}:{}/{}".format(callback_host, callback_port, marker)
         bunq_api.add_callback(uid, marker, url)
 
@@ -161,7 +162,7 @@ def wait_for_callback():
         if time.time() < last_sync + 30:
             next_sync = last_sync + 30
         else:
-            log.info("Synchronizing periodically...")
+            log.info("Synchronizing...")
             synchronize()
             last_sync = time.time()
             next_sync = last_sync + interval
@@ -205,12 +206,12 @@ try:
                 next_sync = time.time() + wait
 
             setup_callback()
-            if callback_ip and callback_port:
+            if callback_host and callback_port:
                 wait_for_callback()
             else:
                 time_left = max(next_sync - time.time(), 0)
-                log.warning("No callback, waiting for .{} minutes...".format(
-                    int(time_left/60)))
+                log.warning("No callback, waiting for {} minutes...".format(
+                    helpers.format_seconds(int(time_left/60))))
                 time.sleep(time_left)
 
             consecutive_errors = 0
