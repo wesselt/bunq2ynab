@@ -39,14 +39,19 @@ def matching_pairs(bunq, ynab, conf):
     return True
 
 
+# YNAB does not accept transactions older than 5 years
+def get_minimum_date():
+    min_dt = datetime.datetime.utcnow() - datetime.timedelta(days=5*365-1)
+    return min_dt.strftime("%Y-%m-%d")
+
+
 def get_last_transaction_date(transactions):
     for t in reversed(transactions):
         # Ignore manually entered transactions (they're uncleared)
         if (t["payee_name"] != "Starting Balance" and
                 t["cleared"] != "uncleared"):
             return t["date"]
-    return "2000-01-01"
-
+    return get_minimum_date()
 
 class Sync:
 
@@ -154,7 +159,7 @@ class Sync:
         get_all = config.get("all")
         get_start = config.get("start")
         if get_all:
-            start_dt = "2000-01-01"
+            start_dt = get_minimum_date()
         elif get_start:
             start_dt = get_start
         else:
@@ -166,7 +171,7 @@ class Sync:
                                          syncpair["ynab_account_id"], start_dt)
         log.info("Retrieved {} ynab transactions...".format(len(transactions)))
 
-        if not get_all and not get_start:
+        if not get_all and not get_start and transactions:
             # Push start date back to latest uncleared YNAB entry
             start_dt = get_last_transaction_date(transactions)
             today_dt = datetime.datetime.utcnow().strftime("%Y-%m-%d")

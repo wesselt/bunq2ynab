@@ -70,7 +70,12 @@ def set_callbacks(bunq_user_id, url_end, new_callback):
 def get_user_id(user_name):
     for u in bunq.get('v1/user'):
         for k, v in u.items():
-            if (v["display_name"].casefold() == user_name.casefold() or
+            if k == "UserApiKey":
+                name = next(iter(v["requested_by_user"].values()))["display_name"]
+            else:
+                name = v["display_name"]
+
+            if (name.casefold() == user_name.casefold() or
                     str(v["id"]) == user_name):
                 return str(v["id"])
     raise Exception("BUNQ user '{0}' not found".format(user_name))
