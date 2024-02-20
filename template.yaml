@@ -12,25 +12,46 @@ Metadata:
       to list your accounts and budgets. Next add these to your SSM parameter json. 
       Finally set the LIST_MODE environment variable to 0. Full instructions in the
       README file.
-    Author: Wessel Troost and Javy de Koning
+    Author: Wessel Troost and Javy de Koning and Nick Strijbos
     ReadmeUrl: README.md
     SpdxLicenseId: GPL-2.0-only
     LicenseUrl: LICENSE
     Labels: ["Bunq", "Ynab"]
     HomePageUrl: https://github.com/wesselt/bunq2ynab
-    SemanticVersion: 1.3.0
+    SemanticVersion: 1.4.0
     SourceCodeUrl: https://github.com/wesselt/bunq2ynab
 
 Parameters:
   BunqApiToken:
     Type: String
     Description: Your BUNQ API Token
+    NoEcho: true
   YnabAccessToken:
     Type: String
     Description: Your YNAB access token
+    NoEcho: true
   YnabBudget:
     Type: String
     Description: Name of your YNAB budget (use * for all budgets)
+  SMTPServer:
+    Type: String
+    Description: Your SMTP server, for example smtp.google.com
+  SMTPPort:
+    Type: String
+    Description: Port for the SMTP Server, examples are 25, 465 or 587. Relay servers don't require user or password input most of the time.
+  SMTPUser:
+    Type: String
+    Description: Your SMTP username
+  SMTPPassword:
+    Type: String
+    Description: Your SMTP password
+    NoEcho: true
+  SMTPFrom:
+    Type: String
+    Description: From where you get the mail from bunq2ynab@some.where
+  SMTPTo:
+    Type: String
+    Description: Your SMTP to adress, example@some.where
 
 Resources:
   Bunq2YnabLayer:
@@ -38,7 +59,7 @@ Resources:
     Properties:
       ContentUri: aws-layer-content
       CompatibleRuntimes:
-        - python3.8
+        - python3.12
     Metadata:
       BuildMethod: makefile
 
@@ -49,7 +70,7 @@ Resources:
     Properties:
       CodeUri: ./
       Handler: lambda_function.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.12
       Layers:
         - !Ref Bunq2YnabLayer
       MemorySize: 512
@@ -109,6 +130,12 @@ Resources:
               "ynab_budget_name": "${YnabBudget}"
             }
           ]
+          "smtp_server": "${SMTPServer}"
+          "smtp_port": "${SMTPPort}"
+          "smtp_user": "${SMTPUser}"
+          "smtp_password": "${SMTPPassword}"
+          "smtp_from": "${SMTPFrom}"
+          "smtp_to": "${SMTPTo}"
         }
 
   StateJSON:
