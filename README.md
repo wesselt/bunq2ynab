@@ -1,4 +1,18 @@
+![testevent1](img/bunq2ynab-logo.png)
+
 # Bunq2Ynab
+
+Bunq2Ynab is a Python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.
+
+## Table of Contents
+- [Introduction](#bunq2ynab)
+- [Prerequisites](#prerequisites)
+
+## Prerequisites
+
+You'll need a token from both bunq and YNAB to enable synchronization. Both tokens are hexadecimal and 64 characters long, like `7197c12ef0eae4572dfb85706353e6a98410b3a7bbe598726404072decd1d664`.
+
+## Getting Started
 
 Bunq2Ynab is a Python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.
 
@@ -9,11 +23,13 @@ You'll need a token from both bunq and YNAB to enable synchronization.  Both tok
 
 The easiest way to run Bunq2Ynab is in the Amazon cloud. You can also run Bunq2Ynab on a local python installation. Both options are explained below.
 
-## Running on AWS (Serverless)
+## Running on AWS as Lambda function (Serverless)
 
-We've published Bunq2Ynab as Serverless application on the Serverless Application Repository. **This makes it easy for you to deploy the synchronization in the cloud, without running it yourself. Because of the Serverless approach costs should only be a couple of cents a month at most.**
+We've published Bunq2Ynab as Serverless (Lambda) application on the Serverless Application Repository (SAR) or you could also deploy it yourself on AWS with the instructions below.
 
-### Deploying the function
+>This makes it easy for you to deploy the synchronization in the cloud, without running it yourself. Because of the Serverless approach costs should only be a couple of cents a month at most.
+
+### 1. Deploying the function from the SAR
 
 1. Navigate to the [Serverless Application Repository](https://console.aws.amazon.com/serverlessrepo/).
 2. Click `Available Applications`, then `Public applications`, select `Show apps that create custom IAM roles or resource policies` and search for `bunq-ynab-aws-lambda`.
@@ -70,6 +86,9 @@ Here's a screenshot of the account and budget names in the YNAB website and the 
 - In the log's you'll see `set_callbacks | Adding callback MUTATION:`.
 
 Done! Your transactions should now sync automatically.
+
+
+### 2. Deploying the function on your own
 
 ## Local Python installation
 
