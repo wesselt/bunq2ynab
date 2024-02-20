@@ -1,4 +1,4 @@
-![testevent1](img/bunq2ynab-logo.png)
+![logo](src/img/bunq2ynab-logo.png)
 
 # Bunq2Ynab
 
@@ -35,7 +35,7 @@ We've published Bunq2Ynab as Serverless (Lambda) application on the Serverless A
 2. Click `Available Applications`, then `Public applications`, select `Show apps that create custom IAM roles or resource policies` and search for `bunq-ynab-aws-lambda`.
 3. Enter your `BunqApiToken`, `YnabAccessToken`. You can keep `YnabBudget` as `*`.
 
-![sar](img/sar.png)
+![sar](src/img/sar.png)
 
 4. Check the `I acknowledge that this app creates custom IAM roles.` checkbox. An IAM role has to be created to store configuration in Systems Manager Parameter Store.
 
@@ -71,7 +71,7 @@ To alter the configuration:
 
 Here's a screenshot of the account and budget names in the YNAB website and the bunq app:
 
-![location of account and budget name](https://github.com/wesselt/bunq2ynab/blob/master/img/names.png?raw=true)
+![location of account and budget name](https://github.com/wesselt/bunq2ynab/blob/mastsrc/imgimg/names.png?raw=true)
 
 ### Activating Sync
 
@@ -79,9 +79,9 @@ Here's a screenshot of the account and budget names in the YNAB website and the 
 2. Click the function (It should look something like `serverlessrepo-bunq-ynab-aws-lam-Bunq2YnabFunction-<GUID>`
 3. Create a test event, you can accept the default hello-world example.
 
-![testevent1](img/testevent.png)
+![testeventsrc/imgimg/testevent.png)
 
-![testevent2](img/testevent-2.png) 4. Finally Click `Test` to execute the function once. This will activate the sync from Bunq2Ynab.
+![testeventsrc/imgimg/testevent-2.png) 4. Finally Click `Test` to execute the function once. This will activate the sync from Bunq2Ynab.
 
 - In the log's you'll see `set_callbacks | Adding callback MUTATION:`.
 
@@ -89,6 +89,12 @@ Done! Your transactions should now sync automatically.
 
 
 ### 2. Deploying the function on your own
+
+
+
+
+
+
 
 ## Local Python installation
 
