@@ -63,7 +63,8 @@ class Sync:
         if self.populated:
             raise Exception("Sync object is already populated")
         log.info("Retrieving bunq accounts...")
-        self.bunq_accounts = list(bunq_api.get_accounts())
+        self.bunq_accounts = [a for a in bunq_api.get_accounts()
+                              if a["status"] == "ACTIVE"]
         log.info("Retrieving ynab accounts...")
         self.ynab_accounts = list(ynab.get_accounts())
 
