@@ -1,7 +1,10 @@
-from lib import bunq
-from lib.log import log
+from decimal import Decimal
 from urllib.parse import urlencode
 import requests
+import json
+
+from lib import bunq
+from lib.log import log
 
 
 # ----- Adding a callback to the bunq account
@@ -98,18 +101,33 @@ def first_value(data):
     return next(iter(data.values()))
 
 
+# {"UserPerson": {...}}   -->   "UserPerson"
+def first_key(data):
+    return next(iter(data.keys()))
+
+
 def get_accounts_for_user(u):
     method = "v1/user/{}/monetary-account".format(u["id"])
-    for a in [first_value(a) for a in bunq.get(method)]:
-        if a["status"] == "ACTIVE":
-            iban = [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0]
-            yield {
-                "bunq_user_id": u["id"],
-                "bunq_user_name": u.get("display_name"),
-                "bunq_account_id": a["id"],
-                "bunq_account_name": a["description"],
-                "iban": iban
-            }
+    accounts = bunq.get(method)
+    while bunq.has_previous():
+        result = bunq.previous()
+        accounts.extend(result)
+
+    for d in accounts:
+        k = first_key(d)
+        a = first_value(d)
+        iban = [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0]
+        yield {
+            "bunq_user_id": u["id"],
+            "bunq_user_name": u.get("display_name"),
+            "bunq_account_id": a["id"],
+            "bunq_account_name": a["description"],
+            "iban": iban,
+            "balance": Decimal(a["balance"]["value"]),
+            "currency": a["balance"]["currency"],
+            "status": a["status"],
+            "type": k
+        }
 
 
 def get_accounts():
