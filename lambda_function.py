@@ -15,7 +15,7 @@ def add_callbacks(sync):
         return
     log.info("Adding callbacks...")
     for uid in sync.get_bunq_user_ids():
-        callback_marker = config.get("callback-marker") or "bunq2ynab-autosync"
+        callback_marker = config.get("callback_marker") or "bunq2ynab-autosync"
         bunq_api.add_callback(uid, callback_marker, url)
 
 
