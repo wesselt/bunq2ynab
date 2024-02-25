@@ -81,6 +81,7 @@ class Config:
         if not has_oauth_args:
             self.verify()
 
+
     def __getitem__(self, name):
         if not hasattr(self, "config"):
             raise Exception("Load config before using it")
