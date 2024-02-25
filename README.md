@@ -4,18 +4,6 @@
 
 Bunq2Ynab is a Python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.
 
-## Table of Contents
-- [Introduction](#bunq2ynab)
-- [Prerequisites](#prerequisites)
-
-## Prerequisites
-
-You'll need a token from both bunq and YNAB to enable synchronization. Both tokens are hexadecimal and 64 characters long, like `7197c12ef0eae4572dfb85706353e6a98410b3a7bbe598726404072decd1d664`.
-
-## Getting Started
-
-Bunq2Ynab is a Python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.
-
 You'll need a token from both bunq and YNAB to enable synchronization.  Both tokens are  hexadecimal and  64 characters long, like 7197c12ef0eae4572dfb85706353e6a98410b3a7bbe598726404072decd1d664.
 
 1. Create a bunq "API key" in the bunq mobile app. On the profile tab (3rd icon bottom row), click the dots to the top right, then Security & Preferences, then Developers, then API keys, then "Add API Key". Choose to "Reveal" the API key and share it.
@@ -23,13 +11,11 @@ You'll need a token from both bunq and YNAB to enable synchronization.  Both tok
 
 The easiest way to run Bunq2Ynab is in the Amazon cloud. You can also run Bunq2Ynab on a local python installation. Both options are explained below.
 
-## Running on AWS as Lambda function (Serverless)
+## Running on AWS (Serverless)
 
-We've published Bunq2Ynab as Serverless (Lambda) application on the Serverless Application Repository (SAR) or you could also deploy it yourself on AWS with the instructions below.
+We've published Bunq2Ynab as Serverless application on the Serverless Application Repository. **This makes it easy for you to deploy the synchronization in the cloud, without running it yourself. Because of the Serverless approach costs should only be a couple of cents a month at most.**
 
->This makes it easy for you to deploy the synchronization in the cloud, without running it yourself. Because of the Serverless approach costs should only be a couple of cents a month at most.
-
-### 1. Deploying the function from the SAR
+### Deploying the function
 
 1. Navigate to the [Serverless Application Repository](https://console.aws.amazon.com/serverlessrepo/).
 2. Click `Available Applications`, then `Public applications`, select `Show apps that create custom IAM roles or resource policies` and search for `bunq-ynab-aws-lambda`.
@@ -71,7 +57,7 @@ To alter the configuration:
 
 Here's a screenshot of the account and budget names in the YNAB website and the bunq app:
 
-![location of account and budget name](https://github.com/wesselt/bunq2ynab/blob/mastsrc/imgimg/names.png?raw=true)
+![location of account and budget name](https://github.com/wesselt/bunq2ynab/blob/master/src/img/names.png?raw=true)
 
 ### Activating Sync
 
@@ -79,22 +65,13 @@ Here's a screenshot of the account and budget names in the YNAB website and the 
 2. Click the function (It should look something like `serverlessrepo-bunq-ynab-aws-lam-Bunq2YnabFunction-<GUID>`
 3. Create a test event, you can accept the default hello-world example.
 
-![testeventsrc/imgimg/testevent.png)
+![testevent1](src/img/testevent.png)
 
-![testeventsrc/imgimg/testevent-2.png) 4. Finally Click `Test` to execute the function once. This will activate the sync from Bunq2Ynab.
+![testevent2](src/img/testevent-2.png) 4. Finally Click `Test` to execute the function once. This will activate the sync from Bunq2Ynab.
 
 - In the log's you'll see `set_callbacks | Adding callback MUTATION:`.
 
 Done! Your transactions should now sync automatically.
-
-
-### 2. Deploying the function on your own
-
-
-
-
-
-
 
 ## Local Python installation
 
