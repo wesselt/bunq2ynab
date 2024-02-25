@@ -22,5 +22,10 @@ def print_accounts(u):
 users = bunq.get('v1/user')
 for u in users:
     for k, v in u.items():
-        print('{0} "{1}" ({2})'.format(k, v.get("display_name", ''), v["id"]))
+        if k == "UserApiKey":
+            name = next(iter(v["requested_by_user"].values()))["display_name"]
+        else:
+            name = v["display_name"]
+
+        print('{0} "{1}" ({2})'.format(k, name, v["id"]))
         print_accounts(v)
