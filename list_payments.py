@@ -18,7 +18,7 @@ bunq_account_id = bunq_api.get_account_id(bunq_user_id,
 
 method = ("v1/user/{0}/monetary-account/{1}/payment?count=100"
           .format(bunq_user_id, bunq_account_id))
-payments = bunq.get(method)
+payments = bunq.fetch(method)
 for v in [p["Payment"] for p in payments]:
     print("{0:>8} {1:3}  {2}  {3} {4}".format(
         v["amount"]["value"],

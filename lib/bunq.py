@@ -217,8 +217,27 @@ def call(action, method, data=None):
 
 # -----------------------------------------------------------------------------
 
-def get(method):
+# Get first result set, leave pagination to caller
+def fetch(method):
     return call('GET', method)
+
+
+# Get all results with pagination
+def get(method):
+    # When no count is given, the default count is set to 10.
+    # The maximum count you can set is 200.
+    # https://beta.doc.bunq.com/basics/pagination
+    if "count=" in method:
+        raise Exception("Internal error: call to bunq.get() with count "
+            f"argument.  Call fetch() instead.  Method: {method}")
+    if "?" in method:
+        method_count = method + "&count=200"
+    else:
+        method_count = method + "?count=200"
+    result = call('GET', method_count)
+    while has_previous():
+        result.extend(previous())
+    return result
 
 
 def has_previous():

@@ -108,12 +108,7 @@ def first_key(data):
 
 def get_accounts_for_user(u):
     method = "v1/user/{}/monetary-account".format(u["id"])
-    accounts = bunq.get(method)
-    while bunq.has_previous():
-        result = bunq.previous()
-        accounts.extend(result)
-
-    for d in accounts:
+    for d in bunq.get(method):
         k = first_key(d)
         a = first_value(d)
         iban = [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0]
@@ -166,7 +161,7 @@ def map_payments(result):
 def get_payments(user_id, account_id, start_date):
     method = ("v1/user/{0}/monetary-account/{1}/payment?count=200"
               .format(user_id, account_id))
-    payments = map_payments(bunq.get(method))
+    payments = map_payments(bunq.fetch(method))
     if not payments:
         log.info("No bunq payments found...")
         return []
