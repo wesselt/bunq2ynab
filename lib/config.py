@@ -22,12 +22,6 @@ class Config:
     def add_default_arguments(self):
         self.parser.add_argument("--config", "-c",
             help="Configuration file (default: config.json"),
-        self.parser.add_argument("--oauth-client-id",
-            help="OAuth client ID"),
-        self.parser.add_argument("--oauth-client-secret",
-            help="OAuth client secret"),
-        self.parser.add_argument("--oauth-server-port", default=3000, type=int,
-            help="OAuth server port (default: 3000)"),
         self.parser.add_argument("--start", "-s",
             help="Synchronize from a date (like 2023-12-31)")
         self.parser.add_argument("--all", "-a", action="store_true",
@@ -59,15 +53,10 @@ class Config:
         else:
             self.config_fn = helpers.fname_to_path("config.json")
 
-        has_oauth_args = args.oauth_client_id or args.oauth_client_secret
-
-        if has_oauth_args:
-            self.config = {}
+        if os.environ.get("AWS_REGION"):
+            self.read_ssm_config()
         else:
-            if os.environ.get("AWS_REGION"):
-                self.read_ssm_config()
-            else:
-                self.read_json_config()
+            self.read_json_config()
 
         # Override config.json with command line arguments
         for k, v in vars(args).items():
@@ -78,8 +67,7 @@ class Config:
         if config["log_level"]:
             log_module.set_log_level("file config.json", config["log_level"])
 
-        if not has_oauth_args:
-            self.verify()
+        self.verify()
 
 
     def __getitem__(self, name):
@@ -144,8 +132,9 @@ class Config:
 
 
     def verify(self):
-        bunq_token_regex = r"^[0-9a-f]{64}$"
-        if not re.match(bunq_token_regex, self["api_token"]):
+        api_token_regex = r"^[0-9a-f]{64}$"
+        api_token = self["api_token"]
+        if api_token and not re.match(api_token_regex, api_token):
             log.critical('Configuration setting "api_token" must contain ' +
                 'a bunq API key.  On the profile tab (3rd icon bottom row), ' +
                 'click the cogwheel to the top right, then Security & ' +
@@ -156,7 +145,8 @@ class Config:
                 'API key is: 7197c12ef0eae4572dfb85706353e6a98410b3a7bb' +
                 'e598726404072decd1d664')
             sys.exit(1)
-        if len(self["personal_access_token"]) < 10:
+        token = self["personal_access_token"]
+        if token and len(token) < 10:
             log.critical('Configuration setting "personal_access_token" ' +
                 'must contain a YNAB personal access token.  Create one in ' +
                 'Top Left Menu -> Account Settings -> Developers.  You can ' +
