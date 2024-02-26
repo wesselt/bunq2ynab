@@ -74,6 +74,12 @@ class MyRequestHandler(BaseHTTPRequestHandler):
         )
 
 
+config.parser.add_argument("--oauth-client-id",
+    help="OAuth client ID"),
+config.parser.add_argument("--oauth-client-secret",
+    help="OAuth client secret"),
+config.parser.add_argument("--oauth-server-port", default=3000, type=int,
+    help="OAuth server port (default: 3000)"),
 config.load()
 
 server_port = config["oauth_server_port"]
