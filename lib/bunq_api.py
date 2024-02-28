@@ -11,7 +11,7 @@ from lib.log import log
 
 def add_callback(bunq_user_id, url_end, url):
     if not url.endswith(url_end):
-        raise Exception("URL should end with end-of-url marker")
+        raise Exception(f"URL should end with end-of-url marker {url_end}")
     set_callbacks(bunq_user_id, url_end, {
         "category": "MUTATION",
         "notification_target": url
