@@ -4,14 +4,16 @@
 # capture the data coming from bunq and stop webserver
 # exchange token with bunq for access token
 # print the access token as the api token!
+import argparse
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import requests
 from functools import partial
 import webbrowser
 import os
 import sys
 from urllib.parse import urlparse, parse_qs, urlencode
 import uuid
-from lib import bunq_api
+
 from lib.config import config
 
 
@@ -53,7 +55,7 @@ class MyRequestHandler(BaseHTTPRequestHandler):
             )
             return
 
-        access_token = bunq_api.put_token_exchange(
+        access_token = put_token_exchange(
             code=query_parameters["code"][0],
             oauth_client_id=self.oauth_client_id,
             oauth_client_secret=self.oauth_client_secret,
@@ -75,11 +77,11 @@ class MyRequestHandler(BaseHTTPRequestHandler):
 
 
 config.parser.add_argument("--oauth-client-id",
-    help="OAuth client ID"),
+    help="OAuth client ID")
 config.parser.add_argument("--oauth-client-secret",
-    help="OAuth client secret"),
+    help="OAuth client secret")
 config.parser.add_argument("--oauth-server-port", default=3000, type=int,
-    help="OAuth server port (default: 3000)"),
+    help="OAuth server port (default: 3000)")
 config.load()
 
 server_port = config["oauth_server_port"]
@@ -89,8 +91,46 @@ oauth_client_id = config["oauth_client_id"]
 oauth_client_secret = config["oauth_client_secret"]
 oauth_redirect_url = f"http://localhost:{server_port}"
 
+
+# From https://beta.doc.bunq.com/basics/oauth#token-exchange
+def put_token_exchange(code, oauth_client_id, oauth_client_secret, oauth_redirect_url):
+    bunq_base_token_url = "https://api.oauth.bunq.com/v1/token"
+    bunq_token_params = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "client_id": oauth_client_id,
+        "client_secret": oauth_client_secret,
+        "redirect_uri": oauth_redirect_url,
+    }
+
+    # Encode the parameters
+    encoded_token_params = urlencode(bunq_token_params)
+
+    # From https://beta.doc.bunq.com/basics/oauth#token-exchange
+    # construct the complete URL with parameters
+    bunq_token_url = f"{bunq_base_token_url}?{encoded_token_params}"
+
+    response = requests.post(bunq_token_url)
+    return response.json()['access_token']
+
+
+# From https://beta.doc.bunq.com/basics/oauth#authorization-request
+def get_oauth_url(oauth_state, oauth_client_id, oauth_redirect_url):
+    base_url = "https://oauth.bunq.com/auth"
+    params = {
+        "response_type": "code",
+        "state": oauth_state,
+        "client_id": oauth_client_id,
+        "redirect_uri": oauth_redirect_url,
+    }
+    # Encode the parameters
+    encoded_params = urlencode(params)
+    url = f"{base_url}?{encoded_params}"
+    return url
+
+
 webbrowser.open(
-    bunq_api.get_oauth_url(
+    get_oauth_url(
         oauth_state=oauth_state,
         oauth_client_id=oauth_client_id,
         oauth_redirect_url=oauth_redirect_url,
