@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  bunq2ynab:
+    build: .
+    restart: always
+    volumes:
+      - ./config.json:/usr/src/app/config.json
