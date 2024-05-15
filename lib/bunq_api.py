@@ -111,6 +111,8 @@ def get_accounts_for_user(u):
     for d in bunq.get(method):
         k = first_key(d)
         a = first_value(d)
+        if k == "MonetaryAccountExternal":
+            continue
         iban = [a["value"] for a in a["alias"] if a["type"] =="IBAN"][0]
         yield {
             "bunq_user_id": u["id"],
