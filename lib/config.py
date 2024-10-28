@@ -105,29 +105,25 @@ class Config:
                 "api_token": "enter bunq api key here",
                 "personal_access_token": "enter ynab token here",
                 "accounts": [{
-                    "bunq_account_name": "enter bunq account ere",
+                    "bunq_account_name": "enter bunq account here",
                     "ynab_budget_name": "enter ynab budget here",
                     "ynab_account_name": "enter ynab account here"
                 }]
             }
             with open(self.config_fn, "w") as f:
                 json.dump(example_config, f, indent=4)
-            log.critical("Missing configuration.  Example created, please " +
-                         "edit " + self.config_fn)
+            log.critical("Missing configuration.  Example created, please edit " + self.config_fn)
             sys.exit(1)
-
+        
         try:
-            with open(self.config_fn) as f:
+            with open(self.config_fn, encoding='utf-8') as f:
                 self.config = json.load(f)
         except Exception as e:
-            log.critical("Error loading configuration {}: {}"
-                         .format(self.config_fn, e))
+            log.critical("Error loading configuration {}: {}".format(self.config_fn, e))
             sys.exit(1)
-
-        if (self.config["api_token"] == "enter bunq api key here" or
-              self.config["personal_access_token"] == "enter ynab token here"):
-            log.critical("Configuration incomplete, please edit " +
-                         self.config_fn)
+        
+        if (self.config["api_token"] == "enter bunq api key here" or self.config["personal_access_token"] == "enter ynab token here"):
+            log.critical("Configuration incomplete, please edit " + self.config_fn)
             sys.exit(1)
 
 
