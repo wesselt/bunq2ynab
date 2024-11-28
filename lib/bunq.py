@@ -1,11 +1,13 @@
 import base64
-from OpenSSL import crypto
 import json
 import os
 import requests
 import socket
 import sys
 import time
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
 
 from lib import network
 from lib.config import config
@@ -38,20 +40,33 @@ def check_stale_api_token():
 def get_private_key():
     pem_str = state.get("private_key")
     if pem_str:
-        return crypto.load_privatekey(crypto.FILETYPE_PEM, pem_str)
+        return serialization.load_pem_private_key(
+            pem_str.encode('utf-8'),
+            password=None
+        )
     log.info("Generating new private key...")
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA, 2048)
-    pem = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048
+    )
+    pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
     state.set("private_key", pem.decode("utf-8"))
     state.set("private_key_for_api_token", config.get("api_token"))
-    return key
+    return private_key
 
 
 def get_public_key():
     private_key = get_private_key()
-    pem = crypto.dump_publickey(crypto.FILETYPE_PEM, private_key)
-    return crypto.load_publickey(crypto.FILETYPE_PEM, pem)
+    public_key = private_key.public_key()
+    pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    return pem.decode("utf-8")
 
 
 def get_installation_token():
@@ -60,10 +75,9 @@ def get_installation_token():
         return token
     log.info("Requesting installation token...")
     public_key = get_public_key()
-    pem = crypto.dump_publickey(crypto.FILETYPE_PEM, public_key)
     method = "v1/installation"
     data = {
-        "client_public_key": pem.decode("utf-8")
+        "client_public_key": public_key
     }
     reply = post(method, data)
     token = None
@@ -73,6 +87,7 @@ def get_installation_token():
     if not token:
         raise Exception("No token returned by installation")
     state.set("installation_token", token)
+    return token
 
 
 def register_device():
@@ -130,8 +145,17 @@ def sign(action, method, headers, data):
     headers['X-Bunq-Client-Authentication'] = get_installation_token()
     # Device-server and session-server must be signed
     private_key = get_private_key()
-    sig = crypto.sign(private_key, data, 'sha256')
-    sig_str = base64.b64encode(sig).decode("utf-8")
+    
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    
+    signature = private_key.sign(
+        data,
+        padding.PKCS1v15(),
+        hashes.SHA256()
+    )
+    
+    sig_str = base64.b64encode(signature).decode("utf-8")
     headers['X-Bunq-Client-Signature'] = sig_str
 
 
