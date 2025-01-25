@@ -2,7 +2,7 @@
 
 # Bunq2Ynab
 
-Bunq2Ynab is a Python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.
+Bunq2Ynab is a Python script that synchronizes [bunq](https://bunq.com) accounts with [YNAB](https://youneedabudget.com) accounts.  Since January 2025 YNAB supports bunq natively through after they started using Plaid.  You can use this script for fun or because it syncs instantly.
 
 You'll need a token from both bunq and YNAB to enable synchronization.  Both tokens are  hexadecimal and  64 characters long, like 7197c12ef0eae4572dfb85706353e6a98410b3a7bbe598726404072decd1d664.
 
