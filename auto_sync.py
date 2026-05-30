@@ -1,3 +1,4 @@
+import datetime
 import errno
 import random
 import socket
@@ -39,6 +40,21 @@ callback_port = None
 local_port = None
 portmap_port = None
 sync_obj = None
+
+
+# ----- Quiet hours (23:00 - 07:00)
+
+def seconds_until_morning():
+    now = datetime.datetime.now()
+    wake = now.replace(hour=7, minute=0, second=0, microsecond=0)
+    if now.hour >= 7:
+        wake += datetime.timedelta(days=1)
+    return (wake - now).total_seconds()
+
+
+def is_quiet_hours():
+    hour = datetime.datetime.now().hour
+    return hour >= 23 or hour < 7
 
 
 # ----- Synchronize with YNAB
@@ -193,7 +209,7 @@ def on_error_wait_secs(consecutive_errors):
 # ----- Main loop
 try:
     consecutive_errors = 0
-    wait = (config.get("wait") or 1) * 60
+    wait = (config.get("wait") or 60) * 60
     next_sync = 0
     while True:
         try:
@@ -201,9 +217,15 @@ try:
             sync_obj.populate()
 
             if next_sync < time.time():
-                log.info("Synchronizing at start or before refresh...")
-                synchronize()
-                next_sync = time.time() + wait
+                if is_quiet_hours():
+                    secs = seconds_until_morning()
+                    log.info("Quiet hours, sleeping until 07:00 ({:.0f} min)...".format(secs / 60))
+                    time.sleep(secs)
+                    next_sync = time.time()
+                else:
+                    log.info("Synchronizing at start or before refresh...")
+                    synchronize()
+                    next_sync = time.time() + wait
 
             setup_callback()
             if callback_host and callback_port:
