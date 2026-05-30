@@ -134,8 +134,6 @@ class Sync:
             # uncleared transaction.
             if transaction and transaction["cleared"] != "uncleared":
                 transaction["payment"] = p
-                transaction["approved"] = True
-                transaction["dirty"] = True                
             else:
                 # YNAB payee is max 50 chars 
                 new_trans = {
