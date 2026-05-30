@@ -1,0 +1,11 @@
+services:
+  bunq2ynab:
+    build: .
+    container_name: bunq2ynab
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Amsterdam
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./config.json:/usr/src/app/config.json:ro
+      - ./state.json:/usr/src/app/state.json
