@@ -151,6 +151,28 @@ Optionally you can configure number of errors that occur before a mail is sent (
   "smtp_to": "example@gmail.com"
 ```
 
+## Payee name cleanup
+
+Banks put noisy merchant descriptors in the counterparty name of card and
+online payments, such as `BCK*Lahore Catering`, `CCV*GEBAKSKRAAM DE VRI`,
+`HEMA EV0027`, `ZEEMAN LEEUWARDEN NWE` or `U. Metselaar via Rabo Betaalverzoek`.
+Bunq2Ynab can clean these up before sending them to YNAB.
+
+Set `payee_cleanup` in your config:
+
+```json
+  "payee_cleanup": "rules"
+```
+
+| Value     | Behaviour                                                              |
+|-----------|-----------------------------------------------------------------------|
+| `"none"`  | Legacy behaviour: only split off anything after `" - "`.              |
+| `"rules"` | **Default.** Strip payment-processor prefixes (`BCK*`, `CCV*`, ...), payment-request suffixes (`via ... Betaalverzoek`), the city, and store/terminal codes. |
+
+The rules are conservative string transformations with no external calls; for
+example `CCV*GEBAKSKRAAM DE VRI` becomes `GEBAKSKRAAM DE VRI` and `HEMA EV0027`
+becomes `HEMA`. See `test_payee.py` for the full set of examples.
+
 ## systemd script
 
 Adding autosync as a systemd service
