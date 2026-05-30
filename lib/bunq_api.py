@@ -4,6 +4,7 @@ import requests
 import json
 
 from lib import bunq
+from lib import payee
 from lib.log import log
 
 
@@ -146,18 +147,25 @@ def put_callbacks(user_id, new_notifications):
     bunq.post(method, data)
 
 
+CARD_PAYMENT_TYPES = {"MASTERCARD", "MAESTRO"}
+
+
+def map_payment(p):
+    is_card = p["type"] in CARD_PAYMENT_TYPES
+    return {
+        "amount": p["amount"]["value"],
+        "date": p["created"][:10],
+        "type": p["type"],
+        "sub_type": p["sub_type"],
+        "iban": p["counterparty_alias"]["iban"],
+        "payee": payee.clean(p["counterparty_alias"]["display_name"],
+                             description=p.get("description"), is_card=is_card),
+        "description": "" if is_card else p["description"].strip()
+    }
+
+
 def map_payments(result):
-    raw_payments = [p["Payment"] for p in result]
-    payments = map(lambda p: {
-            "amount": p["amount"]["value"],
-            "date": p["created"][:10],
-            "type": p["type"],
-            "sub_type": p["sub_type"],
-            "iban": p["counterparty_alias"]["iban"],
-            "payee": p["counterparty_alias"]["display_name"],
-            "description": p["description"].strip()
-        }, raw_payments)
-    return list(payments)
+    return [map_payment(p["Payment"]) for p in result]
 
 
 def get_payments(user_id, account_id, start_date):
