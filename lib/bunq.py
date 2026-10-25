@@ -15,6 +15,8 @@ from lib.state import state
 from lib.log import log
 
 url = "https://api.bunq.com/"
+# Without a timeout a stalled connection blocks the sync loop forever (Oct 2026).
+TIMEOUT = 60
 
 # Pagination
 older_url = None
@@ -193,13 +195,13 @@ def call_requests(action, method, data_obj):
     sign(action, method, headers, data)
     log_request(action, method, headers, data_obj)
     if action == "GET":
-        reply = requests.get(url + method, headers=headers)
+        reply = requests.get(url + method, headers=headers, timeout=TIMEOUT)
     elif action == "POST":
-        reply = requests.post(url + method, headers=headers, data=data)
+        reply = requests.post(url + method, headers=headers, data=data, timeout=TIMEOUT)
     elif action == "PUT":
-        reply = requests.put(url + method, headers=headers, data=data)
+        reply = requests.put(url + method, headers=headers, data=data, timeout=TIMEOUT)
     elif action == "DELETE":
-        reply = requests.delete(url + method, headers=headers)
+        reply = requests.delete(url + method, headers=headers, timeout=TIMEOUT)
     log_reply(reply)
     if reply.headers["Content-Type"] == "application/json":
         return reply.json()

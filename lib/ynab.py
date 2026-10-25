@@ -10,6 +10,8 @@ from lib.log import log
 
 
 url = 'https://api.youneedabudget.com/'
+# Without a timeout a stalled connection blocks the sync loop forever (Oct 2026).
+TIMEOUT = 60
 
 
 # -----------------------------------------------------------------------------
@@ -45,11 +47,11 @@ def call(action, method, data_obj=None):
     }
     log_request(action, method, headers, data_obj)
     if action == 'GET':
-        reply = requests.get(url + method, headers=headers)
+        reply = requests.get(url + method, headers=headers, timeout=TIMEOUT)
     elif action == 'POST':
-        reply = requests.post(url + method, headers=headers, data=data)
+        reply = requests.post(url + method, headers=headers, data=data, timeout=TIMEOUT)
     elif action == 'PATCH':
-        reply = requests.patch(url + method, headers=headers, data=data)
+        reply = requests.patch(url + method, headers=headers, data=data, timeout=TIMEOUT)
     log_reply(reply)
     result = reply.json()
     if "error" in result:
